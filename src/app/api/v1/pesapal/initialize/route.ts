@@ -87,7 +87,7 @@ export async function POST(request: NextRequest) {
           { session },
         );
 
-        const order = await Order.create(
+        const [order] = await Order.create(
           [
             {
               items: payload.items,
