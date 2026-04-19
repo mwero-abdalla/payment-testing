@@ -62,8 +62,7 @@ export async function GET(request: NextRequest) {
     );
 
     const isSuccess = synced.orderStatus === "paid";
-    const isPending =
-      synced.orderStatus === "pending" || synced.orderStatus === "initialized";
+    const isPending = synced.orderStatus === "pending";
 
     const redirectUrl = new URL(
       isSuccess ? "/pesalink/success" : "/pesalink",
