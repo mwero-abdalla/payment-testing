@@ -75,11 +75,13 @@ export function CheckoutStatus() {
           
           <div className="mt-4 flex flex-wrap gap-2">
             {!isPending && (
-              href="/dashboard"
-              className="inline-flex h-8 items-center justify-center rounded-full bg-slate-950 px-4 text-xs font-medium text-white transition hover:bg-slate-800 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-200"
-            >
-              Go to Dashboard
-            </Link>
+              <Link
+                href="/dashboard"
+                className="inline-flex h-8 items-center justify-center rounded-full bg-slate-950 px-4 text-xs font-medium text-white transition hover:bg-slate-800 dark:bg-white dark:text-slate-950 dark:hover:bg-slate-200"
+              >
+                Go to Dashboard
+              </Link>
+            )}
             {!isSuccessful && (
                <button
                  onClick={() => window.history.replaceState({}, '', window.location.pathname)}
