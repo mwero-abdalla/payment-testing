@@ -4,6 +4,7 @@ import { z } from "zod";
 
 import { connectToDatabase } from "../../../../../lib/mongoose";
 import { Order } from "../../../../../models/Order";
+import { Payment } from "../../../../../models/Payment";
 
 const orderItemSchema = z.object({
   name: z.string().min(1),
@@ -80,12 +81,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    console.error("Failed to create order", error);
+    const errorMessage = error instanceof Error ? error.message : "Unknown error";
+    console.error("Failed to create order:", error);
 
     return NextResponse.json(
       {
         success: false,
-        message: "Failed to create order.",
+        message: `Failed to create order: ${errorMessage}`,
       },
       { status: 500 },
     );
@@ -144,12 +146,13 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    console.error("Failed to list orders", error);
+    const errorMessage = error instanceof Error ? error.message : "Unknown error";
+    console.error("Failed to list orders:", error);
 
     return NextResponse.json(
       {
         success: false,
-        message: "Failed to list orders.",
+        message: `Failed to list orders: ${errorMessage}`,
       },
       { status: 500 },
     );
