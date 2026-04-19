@@ -138,7 +138,11 @@ export async function GET(request: NextRequest) {
 
     const synced = await verifyByReference(payload.reference);
 
-    const redirectUrl = new URL("/paystack", request.url);
+    const isSuccess = synced.orderStatus === "paid";
+    const redirectUrl = new URL(
+      isSuccess ? "/paystack/success" : "/paystack",
+      request.url,
+    );
     redirectUrl.searchParams.set("status", synced.orderStatus);
     redirectUrl.searchParams.set("orderId", synced.order?._id.toString() || "");
 

@@ -72,7 +72,11 @@ export async function GET(request: NextRequest) {
       extractMerchantReference(query),
     );
 
-    const redirectUrl = new URL("/pesalink", request.url);
+    const isSuccess = synced.orderStatus === "paid";
+    const redirectUrl = new URL(
+      isSuccess ? "/pesalink/success" : "/pesalink",
+      request.url,
+    );
     redirectUrl.searchParams.set("status", synced.orderStatus);
     redirectUrl.searchParams.set("orderId", synced.order?._id.toString() || "");
 
