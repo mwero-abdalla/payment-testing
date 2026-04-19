@@ -46,12 +46,7 @@ async function processCallback(trackingId: string, merchantReference?: string) {
     orderStatus: synced.orderStatus,
   });
 
-  return NextResponse.json({
-    success: true,
-    data: {
-      ...synced,
-    },
-  });
+  return synced;
 }
 
 export async function GET(request: NextRequest) {
@@ -72,7 +67,16 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    return await processCallback(trackingId, extractMerchantReference(query));
+    const synced = await processCallback(
+      trackingId,
+      extractMerchantReference(query),
+    );
+
+    const redirectUrl = new URL("/pesalink", request.url);
+    redirectUrl.searchParams.set("status", synced.orderStatus);
+    redirectUrl.searchParams.set("orderId", synced.order?._id.toString() || "");
+
+    return NextResponse.redirect(redirectUrl);
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(

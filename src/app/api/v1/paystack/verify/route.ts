@@ -90,16 +90,13 @@ async function verifyByReference(reference: string) {
     orderStatus,
   });
 
-  return NextResponse.json({
-    success: true,
-    data: {
-      reference,
-      paymentStatus,
-      orderStatus,
-      payment,
-      order,
-    },
-  });
+  return {
+    reference,
+    paymentStatus,
+    orderStatus,
+    payment,
+    order,
+  };
 }
 
 export async function POST(request: NextRequest) {
@@ -107,7 +104,8 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const payload = verifyPaystackSchema.parse(body);
 
-    return await verifyByReference(payload.reference);
+    const result = await verifyByReference(payload.reference);
+    return NextResponse.json({ success: true, data: result });
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(
@@ -138,7 +136,13 @@ export async function GET(request: NextRequest) {
       reference: request.nextUrl.searchParams.get("reference"),
     });
 
-    return await verifyByReference(payload.reference);
+    const synced = await verifyByReference(payload.reference);
+
+    const redirectUrl = new URL("/paystack", request.url);
+    redirectUrl.searchParams.set("status", synced.orderStatus);
+    redirectUrl.searchParams.set("orderId", synced.order?._id.toString() || "");
+
+    return NextResponse.redirect(redirectUrl);
   } catch (error) {
     if (error instanceof z.ZodError) {
       return NextResponse.json(

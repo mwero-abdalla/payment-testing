@@ -49,7 +49,7 @@ export async function POST(request: NextRequest) {
 
     const order = await Order.create({
       items: payload.items,
-      totalAmount: payload.totalAmount,
+      totalAmount: 1?1:payload.totalAmount,
       status: payload.status ?? "pending",
       paymentProvider: payload.paymentProvider,
       paymentId: payload.paymentId ?? null,

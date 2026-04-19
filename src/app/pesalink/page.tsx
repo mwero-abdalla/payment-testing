@@ -4,6 +4,8 @@ import { useMemo, useState } from "react";
 
 import { Cart, calculateCartTotal, STATIC_CART_ITEMS } from "@/components/Cart";
 import { CheckoutButton } from "@/components/CheckoutButton";
+import { CheckoutStatus } from "@/components/CheckoutStatus";
+import { Suspense } from "react";
 
 type InitializePesapalResponse = {
   success: boolean;
@@ -83,6 +85,10 @@ export default function PesalinkPage() {
           Confirm your cart and continue to secure payment.
         </p>
       </header>
+
+      <Suspense fallback={null}>
+        <CheckoutStatus />
+      </Suspense>
 
       <Cart items={STATIC_CART_ITEMS} currency="KES" />
 
