@@ -1,36 +1,108 @@
-This is a [Next.js](https://nextjs.org) project bootstrapped with [`create-next-app`](https://nextjs.org/docs/app/api-reference/cli/create-next-app).
+# Payment Testing App
 
-## Getting Started
+A Next.js 16 payment testing app that demonstrates two payment providers side by side: Paystack and Pesapal. The app records orders and payments in MongoDB, provides checkout pages for each provider, and exposes a dashboard for reviewing transaction history.
 
-First, run the development server:
+## What this app includes
 
+- Two checkout experiences:
+  - [Paystack](docs/paystack/README.md)
+  - [Pesapal](docs/pesapal/README.md)
+- MongoDB-backed order and payment records
+- A dashboard for viewing stored orders and payments
+- API routes for initializing and verifying payments
+- A Pesapal IPN sync endpoint for automating webhook registration
+
+## Main routes
+
+### Pages
+- `/` - landing page
+- `/paystack` - Paystack checkout form
+- `/pesalink` - Pesapal checkout form
+- `/dashboard` - orders and payments dashboard
+
+### API routes
+- `POST /api/v1/paystack/initialize`
+- `POST /api/v1/paystack/verify`
+- `GET /api/v1/paystack/verify`
+- `POST /api/v1/pesapal/initialize`
+- `POST /api/v1/pesapal/webhook`
+- `GET /api/v1/pesapal/callback`
+- `POST /api/v1/pesapal/ipn/sync`
+- `GET /api/v1/orders`
+- `POST /api/v1/orders`
+- `GET /api/v1/orders/[id]`
+- `GET /api/v1/payments`
+- `POST /api/v1/payments`
+- `GET /api/v1/payments/[id]`
+- `PATCH /api/v1/payments/[id]`
+
+## Data flow
+
+1. The user opens either `/paystack` or `/pesalink`.
+2. The checkout page posts cart and customer data to the relevant initialize endpoint.
+3. The API creates an order and a payment record in MongoDB.
+4. The payment provider is called with the generated reference.
+5. The customer is redirected to the provider checkout page.
+6. The payment is later verified by callback, verify endpoint, or Pesapal webhook/IPN sync.
+7. The order and payment records are updated with the final status.
+
+## Local development
+
+### Prerequisites
+- Node.js 20+
+- MongoDB running locally or a MongoDB Atlas connection string
+
+### Install dependencies
 ```bash
-npm run dev
-# or
-yarn dev
-# or
-pnpm dev
-# or
-bun dev
+npm install
 ```
 
-Open [http://localhost:3000](http://localhost:3000) with your browser to see the result.
+### Environment variables
+Copy the template values from [.env.example](.env.example) into [.env.local](.env.local) and fill in the provider credentials.
 
-You can start editing the page by modifying `app/page.tsx`. The page auto-updates as you edit the file.
+### Run the app
+```bash
+npm run dev
+```
 
-This project uses [`next/font`](https://nextjs.org/docs/app/building-your-application/optimizing/fonts) to automatically optimize and load [Geist](https://vercel.com/font), a new font family for Vercel.
+Then open:
+- http://localhost:3000/paystack
+- http://localhost:3000/pesalink
+- http://localhost:3000/dashboard
 
-## Learn More
+### Validate the project
+```bash
+npm run lint
+npm run build
+```
 
-To learn more about Next.js, take a look at the following resources:
+## Environment summary
 
-- [Next.js Documentation](https://nextjs.org/docs) - learn about Next.js features and API.
-- [Learn Next.js](https://nextjs.org/learn) - an interactive Next.js tutorial.
+### Shared
+- `MONGODB_URI`
+- `MONGODB_DB_NAME`
 
-You can check out [the Next.js GitHub repository](https://github.com/vercel/next.js) - your feedback and contributions are welcome!
+### Paystack
+- `PAYSTACK_SECRET_KEY`
+- `PAYSTACK_BASE_URL`
+- `PAYSTACK_CALLBACK_URL`
 
-## Deploy on Vercel
+### Pesapal
+- `PESAPAL_CONSUMER_KEY`
+- `PESAPAL_CONSUMER_SECRET`
+- `PESAPAL_BASE_URL`
+- `PESAPAL_CALLBACK_URL`
+- `PESAPAL_WEBHOOK_URL`
+- `PESAPAL_IPN_ID`
+- `PESAPAL_SYNC_ADMIN_KEY`
 
-The easiest way to deploy your Next.js app is to use the [Vercel Platform](https://vercel.com/new?utm_medium=default-template&filter=next.js&utm_source=create-next-app&utm_campaign=create-next-app-readme) from the creators of Next.js.
+## Documentation
 
-Check out our [Next.js deployment documentation](https://nextjs.org/docs/app/building-your-application/deploying) for more details.
+- [Paystack payment guide](docs/paystack/README.md)
+- [Pesapal payment guide](docs/pesapal/README.md)
+
+## Notes
+
+- Paystack uses callback verification after the user returns from checkout.
+- Pesapal uses both a callback route and a webhook/IPN route.
+- The Pesapal IPN ID can be synced automatically with `POST /api/v1/pesapal/ipn/sync` once the admin key and webhook URL are configured.
