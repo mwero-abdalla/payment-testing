@@ -3,6 +3,7 @@ import { z } from "zod";
 
 import { connectToDatabase } from "@/lib/mongoose";
 import { Payment } from "@/models/Payment";
+import { adjustAmount } from "@/lib/config";
 
 const createPaymentSchema = z.object({
   provider: z.enum(["paystack", "pesapal"]),
@@ -34,7 +35,7 @@ export async function POST(request: NextRequest) {
     const payment = await Payment.create({
       provider: payload.provider,
       reference: payload.reference,
-      amount: payload.amount,
+      amount: adjustAmount(payload.amount),
       currency: payload.currency.toUpperCase(),
       status: payload.status ?? "pending",
       rawResponse: payload.rawResponse ?? null,

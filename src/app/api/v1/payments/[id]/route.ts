@@ -4,6 +4,7 @@ import { z } from "zod";
 
 import { connectToDatabase } from "@/lib/mongoose";
 import { Payment } from "@/models/Payment";
+import { adjustAmount } from "@/lib/config";
 
 const updatePaymentSchema = z
   .object({
@@ -100,6 +101,10 @@ export async function PATCH(
 
     if (typeof payload.currency === "string") {
       updateDoc.currency = payload.currency.toUpperCase();
+    }
+
+    if (typeof payload.amount === "number") {
+      updateDoc.amount = adjustAmount(payload.amount);
     }
 
     const payment = await Payment.findByIdAndUpdate(id, updateDoc, {
