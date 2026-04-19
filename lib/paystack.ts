@@ -1,22 +1,24 @@
 import axios, { type AxiosInstance } from "axios";
 import { z } from "zod";
 
-const PAYSTACK_SECRET_KEY = process.env.PAYSTACK_SECRET_KEY;
+function createPaystackClient(): AxiosInstance {
+  const paystackSecretKey = process.env.PAYSTACK_SECRET_KEY;
 
-if (!PAYSTACK_SECRET_KEY) {
-  throw new Error(
-    "PAYSTACK_SECRET_KEY is not set. Please define it in your environment.",
-  );
+  if (!paystackSecretKey) {
+    throw new Error(
+      "PAYSTACK_SECRET_KEY is not set. Please define it in your environment.",
+    );
+  }
+
+  return axios.create({
+    baseURL: process.env.PAYSTACK_BASE_URL ?? "https://api.paystack.co",
+    headers: {
+      Authorization: `Bearer ${paystackSecretKey}`,
+      "Content-Type": "application/json",
+    },
+    timeout: 15000,
+  });
 }
-
-const paystackClient: AxiosInstance = axios.create({
-  baseURL: process.env.PAYSTACK_BASE_URL ?? "https://api.paystack.co",
-  headers: {
-    Authorization: `Bearer ${PAYSTACK_SECRET_KEY}`,
-    "Content-Type": "application/json",
-  },
-  timeout: 15000,
-});
 
 const paystackInitializeResponseSchema = z.object({
   status: z.boolean(),
@@ -63,6 +65,7 @@ export type VerifyPaystackTransactionResult = {
 export async function initializeTransaction(
   payload: InitializePaystackTransactionInput,
 ) {
+  const paystackClient = createPaystackClient();
   const amountInMinorUnits = Math.round(payload.amount * 100);
 
   if (amountInMinorUnits <= 0) {
@@ -91,6 +94,8 @@ export async function initializeTransaction(
 export async function verifyTransaction(
   reference: string,
 ): Promise<VerifyPaystackTransactionResult> {
+  const paystackClient = createPaystackClient();
+
   if (!reference) {
     throw new Error("Paystack verification requires a transaction reference.");
   }

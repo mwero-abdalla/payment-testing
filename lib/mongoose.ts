@@ -1,13 +1,5 @@
 import mongoose from "mongoose";
 
-const MONGODB_URI = process.env.MONGODB_URI;
-
-if (!MONGODB_URI) {
-  throw new Error(
-    "MONGODB_URI is not set. Please define it in your environment.",
-  );
-}
-
 type CachedConnection = {
   conn: typeof mongoose | null;
   promise: Promise<typeof mongoose> | null;
@@ -28,6 +20,14 @@ if (!global.__mongooseCached) {
 }
 
 export async function connectToDatabase(): Promise<typeof mongoose> {
+  const mongoUri = process.env.MONGODB_URI;
+
+  if (!mongoUri) {
+    throw new Error(
+      "MONGODB_URI is not set. Please define it in your environment.",
+    );
+  }
+
   if (cached.conn) {
     return cached.conn;
   }
@@ -35,7 +35,7 @@ export async function connectToDatabase(): Promise<typeof mongoose> {
   if (!cached.promise) {
     mongoose.set("strictQuery", true);
 
-    cached.promise = mongoose.connect(MONGODB_URI, {
+    cached.promise = mongoose.connect(mongoUri, {
       dbName: process.env.MONGODB_DB_NAME,
       autoIndex: process.env.NODE_ENV !== "production",
       serverSelectionTimeoutMS: 5000,

@@ -1,24 +1,33 @@
 import axios, { type AxiosInstance } from "axios";
 import { z } from "zod";
 
-const PESAPAL_CONSUMER_KEY = process.env.PESAPAL_CONSUMER_KEY;
-const PESAPAL_CONSUMER_SECRET = process.env.PESAPAL_CONSUMER_SECRET;
-
-if (!PESAPAL_CONSUMER_KEY || !PESAPAL_CONSUMER_SECRET) {
-  throw new Error(
-    "PESAPAL_CONSUMER_KEY and PESAPAL_CONSUMER_SECRET must be set in your environment.",
-  );
+function createPesapalClient(): AxiosInstance {
+  return axios.create({
+    baseURL:
+      process.env.PESAPAL_BASE_URL ?? "https://cybqa.pesapal.com/pesapalv3",
+    headers: {
+      "Content-Type": "application/json",
+      Accept: "application/json",
+    },
+    timeout: 15000,
+  });
 }
 
-const pesapalClient: AxiosInstance = axios.create({
-  baseURL:
-    process.env.PESAPAL_BASE_URL ?? "https://cybqa.pesapal.com/pesapalv3",
-  headers: {
-    "Content-Type": "application/json",
-    Accept: "application/json",
-  },
-  timeout: 15000,
-});
+function getPesapalCredentials(): {
+  consumerKey: string;
+  consumerSecret: string;
+} {
+  const consumerKey = process.env.PESAPAL_CONSUMER_KEY;
+  const consumerSecret = process.env.PESAPAL_CONSUMER_SECRET;
+
+  if (!consumerKey || !consumerSecret) {
+    throw new Error(
+      "PESAPAL_CONSUMER_KEY and PESAPAL_CONSUMER_SECRET must be set in your environment.",
+    );
+  }
+
+  return { consumerKey, consumerSecret };
+}
 
 const authTokenResponseSchema = z.object({
   token: z.string(),
@@ -53,16 +62,54 @@ const verifyPesapalResponseSchema = z.object({
     .transform((value) => (value === undefined ? undefined : String(value))),
 });
 
+const registerPesapalIpnResponseSchema = z.object({
+  ipn_id: z.string().optional(),
+  ipn_url: z.string().optional(),
+  url: z.string().optional(),
+  created_date: z.string().optional(),
+  status: z.string().optional(),
+  error: z
+    .object({
+      type: z.string().optional(),
+      code: z.string().optional(),
+      message: z.string().optional(),
+    })
+    .optional(),
+});
+
+const ipnListEntrySchema = z.object({
+  ipn_id: z.string().optional(),
+  ipn_url: z.string().optional(),
+  url: z.string().optional(),
+  status: z.string().optional(),
+  notification_type: z.string().optional(),
+});
+
+const getPesapalIpnListResponseSchema = z.array(ipnListEntrySchema).or(
+  z.object({
+    data: z.array(ipnListEntrySchema).optional(),
+  }),
+);
+
 export type InitializePesapalPaymentInput = {
   reference: string;
   amount: number;
   currency?: string;
   description: string;
   callbackUrl?: string;
+  notificationId?: string;
   email: string;
   firstName: string;
   lastName: string;
   phoneNumber: string;
+};
+
+export type PesapalIpnEntry = {
+  ipnId: string;
+  url: string;
+  status?: string;
+  notificationType?: string;
+  raw: unknown;
 };
 
 export type VerifyPesapalPaymentResult = {
@@ -78,13 +125,16 @@ export type VerifyPesapalPaymentResult = {
 let cachedToken: { value: string; expiresAt: number } | null = null;
 
 async function getAccessToken(): Promise<string> {
+  const pesapalClient = createPesapalClient();
+  const { consumerKey, consumerSecret } = getPesapalCredentials();
+
   if (cachedToken && cachedToken.expiresAt > Date.now()) {
     return cachedToken.value;
   }
 
   const response = await pesapalClient.post("/api/Auth/RequestToken", {
-    consumer_key: PESAPAL_CONSUMER_KEY,
-    consumer_secret: PESAPAL_CONSUMER_SECRET,
+    consumer_key: consumerKey,
+    consumer_secret: consumerSecret,
   });
 
   const parsed = authTokenResponseSchema.parse(response.data);
@@ -104,6 +154,8 @@ async function getAccessToken(): Promise<string> {
 export async function initializePayment(
   payload: InitializePesapalPaymentInput,
 ) {
+  const pesapalClient = createPesapalClient();
+
   if (payload.amount <= 0) {
     throw new Error("Pesapal initialization requires amount greater than 0.");
   }
@@ -118,7 +170,7 @@ export async function initializePayment(
       amount: payload.amount,
       description: payload.description,
       callback_url: payload.callbackUrl ?? process.env.PESAPAL_CALLBACK_URL,
-      notification_id: process.env.PESAPAL_IPN_ID,
+      notification_id: payload.notificationId ?? process.env.PESAPAL_IPN_ID,
       billing_address: {
         email_address: payload.email,
         phone_number: payload.phoneNumber,
@@ -158,6 +210,8 @@ export async function initializePayment(
 export async function verifyPayment(
   trackingId: string,
 ): Promise<VerifyPesapalPaymentResult> {
+  const pesapalClient = createPesapalClient();
+
   if (!trackingId) {
     throw new Error("Pesapal verification requires a tracking ID.");
   }
@@ -184,4 +238,98 @@ export async function verifyPayment(
     merchantReference: parsed.merchant_reference,
     rawResponse: response.data,
   };
+}
+
+export async function listIpnRegistrations(): Promise<Array<PesapalIpnEntry>> {
+  const pesapalClient = createPesapalClient();
+  const accessToken = await getAccessToken();
+
+  const response = await pesapalClient.get("/api/URLSetup/GetIpnList", {
+    headers: {
+      Authorization: `Bearer ${accessToken}`,
+    },
+  });
+
+  const parsed = getPesapalIpnListResponseSchema.parse(response.data);
+  const entries = Array.isArray(parsed) ? parsed : (parsed.data ?? []);
+
+  const normalizedEntries: Array<PesapalIpnEntry> = [];
+
+  for (const entry of entries) {
+    const ipnId = entry.ipn_id;
+    const url = entry.ipn_url ?? entry.url;
+
+    if (!ipnId || !url) {
+      continue;
+    }
+
+    normalizedEntries.push({
+      ipnId,
+      url,
+      status: entry.status,
+      notificationType: entry.notification_type,
+      raw: entry,
+    });
+  }
+
+  return normalizedEntries;
+}
+
+export async function registerIpnUrl(
+  webhookUrl: string,
+): Promise<PesapalIpnEntry> {
+  if (!webhookUrl) {
+    throw new Error("Pesapal IPN registration requires a webhook URL.");
+  }
+
+  const pesapalClient = createPesapalClient();
+  const accessToken = await getAccessToken();
+
+  const response = await pesapalClient.post(
+    "/api/URLSetup/RegisterIPN",
+    {
+      url: webhookUrl,
+      ipn_notification_type: "POST",
+    },
+    {
+      headers: {
+        Authorization: `Bearer ${accessToken}`,
+      },
+    },
+  );
+
+  const parsed = registerPesapalIpnResponseSchema.parse(response.data);
+
+  if (parsed.error?.message) {
+    throw new Error(`Pesapal IPN registration failed: ${parsed.error.message}`);
+  }
+
+  const ipnId = parsed.ipn_id;
+  const url = parsed.ipn_url ?? parsed.url ?? webhookUrl;
+
+  if (!ipnId) {
+    throw new Error("Pesapal IPN registration did not return an ipn_id.");
+  }
+
+  return {
+    ipnId,
+    url,
+    status: parsed.status,
+    notificationType: "POST",
+    raw: response.data,
+  };
+}
+
+export async function resolveOrRegisterIpn(
+  webhookUrl: string,
+): Promise<PesapalIpnEntry> {
+  const existing = (await listIpnRegistrations()).find(
+    (entry) => entry.url === webhookUrl,
+  );
+
+  if (existing) {
+    return existing;
+  }
+
+  return registerIpnUrl(webhookUrl);
 }

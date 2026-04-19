@@ -1,10 +1,10 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
-import { connectToDatabase } from "../../../../../../lib/mongoose";
-import { verifyPayment } from "../../../../../../lib/pesapal";
-import { Order } from "../../../../../../models/Order";
-import { Payment } from "../../../../../../models/Payment";
+import {
+  PesapalSyncError,
+  syncPesapalPaymentStatus,
+} from "../../../../../../lib/pesapal-payment-sync";
 
 const callbackQuerySchema = z.object({
   orderTrackingId: z.string().optional(),
@@ -14,60 +14,6 @@ const callbackQuerySchema = z.object({
   OrderMerchantReference: z.string().optional(),
   merchant_reference: z.string().optional(),
 });
-
-function mapPesapalToPaymentStatus(
-  statusCode?: string,
-  statusDescription?: string,
-): "successful" | "failed" | "pending" | "cancelled" {
-  const normalizedCode = statusCode?.toLowerCase();
-  const normalizedDescription = statusDescription?.toLowerCase();
-
-  if (
-    normalizedCode === "1" ||
-    normalizedCode === "completed" ||
-    normalizedDescription?.includes("completed") ||
-    normalizedDescription?.includes("success")
-  ) {
-    return "successful";
-  }
-
-  if (
-    normalizedCode === "cancelled" ||
-    normalizedCode === "3" ||
-    normalizedDescription?.includes("cancel")
-  ) {
-    return "cancelled";
-  }
-
-  if (
-    normalizedCode === "2" ||
-    normalizedCode === "failed" ||
-    normalizedDescription?.includes("fail") ||
-    normalizedDescription?.includes("invalid")
-  ) {
-    return "failed";
-  }
-
-  return "pending";
-}
-
-function mapPaymentToOrderStatus(
-  paymentStatus: "successful" | "failed" | "pending" | "cancelled",
-): "paid" | "failed" | "pending" | "cancelled" {
-  if (paymentStatus === "successful") {
-    return "paid";
-  }
-
-  if (paymentStatus === "cancelled") {
-    return "cancelled";
-  }
-
-  if (paymentStatus === "failed") {
-    return "failed";
-  }
-
-  return "pending";
-}
 
 function extractTrackingId(query: z.infer<typeof callbackQuerySchema>): string {
   return (
@@ -89,79 +35,21 @@ function extractMerchantReference(
 }
 
 async function processCallback(trackingId: string, merchantReference?: string) {
-  await connectToDatabase();
-
-  const verified = await verifyPayment(trackingId);
-  const reference = verified.merchantReference ?? merchantReference;
-
-  if (!reference) {
-    return NextResponse.json(
-      {
-        success: false,
-        message: "Missing merchant reference for callback verification.",
-      },
-      { status: 400 },
-    );
-  }
-
-  const payment = await Payment.findOne({
-    provider: "pesapal",
-    reference,
-  });
-
-  if (!payment) {
-    return NextResponse.json(
-      {
-        success: false,
-        message: "Payment not found.",
-      },
-      { status: 404 },
-    );
-  }
-
-  const paymentStatus = mapPesapalToPaymentStatus(
-    verified.statusCode,
-    verified.statusDescription,
-  );
-  const orderStatus = mapPaymentToOrderStatus(paymentStatus);
-
-  payment.status = paymentStatus;
-  payment.rawResponse = verified.rawResponse;
-
-  if (typeof verified.amount === "number") {
-    payment.amount = verified.amount;
-  }
-
-  if (typeof verified.currency === "string") {
-    payment.currency = verified.currency.toUpperCase();
-  }
-
-  await payment.save();
-
-  const order = await Order.findOneAndUpdate(
-    { paymentId: payment._id },
-    { status: orderStatus },
-    { new: true },
-  );
+  const synced = await syncPesapalPaymentStatus(trackingId, merchantReference);
 
   console.info("Pesapal payment callback processed", {
-    paymentId: payment._id.toString(),
-    orderId: order?._id.toString() ?? null,
-    reference,
-    trackingId,
-    paymentStatus,
-    orderStatus,
+    paymentId: synced.payment._id.toString(),
+    orderId: synced.order?._id.toString() ?? null,
+    reference: synced.reference,
+    trackingId: synced.trackingId,
+    paymentStatus: synced.paymentStatus,
+    orderStatus: synced.orderStatus,
   });
 
   return NextResponse.json({
     success: true,
     data: {
-      reference,
-      trackingId,
-      paymentStatus,
-      orderStatus,
-      payment,
-      order,
+      ...synced,
     },
   });
 }
@@ -194,6 +82,16 @@ export async function GET(request: NextRequest) {
           issues: error.issues,
         },
         { status: 400 },
+      );
+    }
+
+    if (error instanceof PesapalSyncError) {
+      return NextResponse.json(
+        {
+          success: false,
+          message: error.message,
+        },
+        { status: error.status },
       );
     }
 

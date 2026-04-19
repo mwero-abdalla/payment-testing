@@ -5,6 +5,7 @@ import { z } from "zod";
 
 import { connectToDatabase } from "../../../../../../lib/mongoose";
 import { initializePayment } from "../../../../../../lib/pesapal";
+import { resolvePesapalNotificationId } from "../../../../../../lib/pesapal-ipn";
 import { Order } from "../../../../../../models/Order";
 import { Payment } from "../../../../../../models/Payment";
 
@@ -85,12 +86,16 @@ export async function POST(request: NextRequest) {
     });
 
     try {
+      const { notificationId, source: notificationSource } =
+        await resolvePesapalNotificationId();
+
       const initialized = await initializePayment({
         reference,
         amount: totalAmount,
         currency: payload.currency.toUpperCase(),
         description: buildDescription(payload.items, payload.description),
         callbackUrl: payload.callbackUrl,
+        notificationId,
         email: payload.email,
         firstName: payload.firstName,
         lastName: payload.lastName,
@@ -110,6 +115,7 @@ export async function POST(request: NextRequest) {
         paymentId: payment._id.toString(),
         reference,
         orderTrackingId: initialized.orderTrackingId,
+        notificationSource,
       });
 
       return NextResponse.json(
