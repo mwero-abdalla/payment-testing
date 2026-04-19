@@ -50,38 +50,32 @@ function mapPaymentToOrderStatus(
 
 async function verifyByReference(reference: string) {
   await connectToDatabase();
-
+ 
   const payment = await Payment.findOne({
     provider: "paystack",
     reference,
   });
-
+ 
   if (!payment) {
-    return NextResponse.json(
-      {
-        success: false,
-        message: "Payment not found.",
-      },
-      { status: 404 },
-    );
+    throw new Error("Payment not found.");
   }
-
+ 
   const verified = await verifyTransaction(reference);
   const paymentStatus = mapPaystackToPaymentStatus(verified.status);
   const orderStatus = mapPaymentToOrderStatus(paymentStatus);
-
+ 
   payment.status = paymentStatus;
   payment.rawResponse = verified.rawResponse;
   payment.amount = verified.amount;
   payment.currency = verified.currency.toUpperCase();
   await payment.save();
-
+ 
   const order = await Order.findOneAndUpdate(
     { paymentId: payment._id },
     { status: orderStatus },
     { returnDocument: "after" },
   );
-
+ 
   console.info("Paystack payment verified", {
     paymentId: payment._id.toString(),
     orderId: order?._id.toString() ?? null,
@@ -89,7 +83,7 @@ async function verifyByReference(reference: string) {
     paymentStatus,
     orderStatus,
   });
-
+ 
   return {
     reference,
     paymentStatus,
