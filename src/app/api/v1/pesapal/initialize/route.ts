@@ -1,5 +1,5 @@
 import { randomUUID } from "node:crypto";
-
+import { isAxiosError } from "axios";
 import { type NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
@@ -132,9 +132,31 @@ export async function POST(request: NextRequest) {
         { status: 201 },
       );
     } catch (error) {
+      console.error("Pesapal initialization failed", error);
+
+      let status = 502;
+      let detailedMessage = "Failed to initialize Pesapal checkout.";
+      let details: unknown = null;
+
+      if (isAxiosError(error)) {
+        status = error.response?.status ?? 502;
+        details = error.response?.data;
+        const axiosMessage =
+          typeof details === "object" && details !== null && "message" in details
+            ? String(details.message)
+            : error.message;
+        detailedMessage = `Pesapal API error: ${axiosMessage}`;
+      } else if (error instanceof z.ZodError) {
+        detailedMessage = "Internal validation error during Pesapal initialization.";
+        details = error.issues;
+      } else if (error instanceof Error) {
+        detailedMessage = error.message;
+      }
+
       payment.status = "failed";
       payment.rawResponse = {
-        message: "Pesapal initialization failed",
+        message: detailedMessage,
+        details,
         error:
           error instanceof Error
             ? {
@@ -148,14 +170,13 @@ export async function POST(request: NextRequest) {
       order.status = "failed";
       await order.save();
 
-      console.error("Pesapal initialization failed", error);
-
       return NextResponse.json(
         {
           success: false,
-          message: "Failed to initialize Pesapal checkout.",
+          message: detailedMessage,
+          details,
         },
-        { status: 502 },
+        { status },
       );
     }
   } catch (error) {
