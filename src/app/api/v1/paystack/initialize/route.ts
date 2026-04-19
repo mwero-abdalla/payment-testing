@@ -7,6 +7,7 @@ import { connectToDatabase } from "@/lib/mongoose";
 import { initializeTransaction } from "@/lib/paystack";
 import { Order } from "@/models/Order";
 import { Payment } from "@/models/Payment";
+import { adjustAmount } from "@/lib/config";
 
 const cartItemSchema = z.object({
   name: z.string().min(1),
@@ -55,7 +56,7 @@ export async function POST(request: NextRequest) {
     const payment = await Payment.create({
       provider: "paystack",
       reference,
-      amount: totalAmount,
+      amount: adjustAmount(totalAmount),
       currency: payload.currency.toUpperCase(),
       status: "pending",
       rawResponse: null,
@@ -72,7 +73,7 @@ export async function POST(request: NextRequest) {
     try {
       const initialized = await initializeTransaction({
         email: payload.email,
-        amount: totalAmount,
+        amount: adjustAmount(totalAmount),
         reference,
         currency: payload.currency.toUpperCase(),
         callbackUrl: payload.callbackUrl,

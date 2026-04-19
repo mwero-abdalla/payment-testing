@@ -3,7 +3,8 @@ import { type NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
 import { connectToDatabase } from "@/lib/mongoose";
-import { Order, Payment } from "@/models";
+import { Order } from "@/models";
+import { adjustAmount } from "@/lib/config";
 
 const orderItemSchema = z.object({
   name: z.string().min(1),
@@ -49,7 +50,7 @@ export async function POST(request: NextRequest) {
 
     const order = await Order.create({
       items: payload.items,
-      totalAmount: 1?1:payload.totalAmount,
+      totalAmount: adjustAmount(payload.totalAmount),
       status: payload.status ?? "pending",
       paymentProvider: payload.paymentProvider,
       paymentId: payload.paymentId ?? null,

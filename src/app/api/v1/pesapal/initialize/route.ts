@@ -9,6 +9,7 @@ import { initializePayment } from "@/lib/pesapal";
 import { resolvePesapalNotificationId } from "@/lib/pesapal-ipn";
 import { Order } from "@/models/Order";
 import { Payment } from "@/models/Payment";
+import { adjustAmount } from "@/lib/config";
 
 const cartItemSchema = z.object({
   name: z.string().min(1),
@@ -78,7 +79,7 @@ export async function POST(request: NextRequest) {
             {
               provider: "pesapal",
               reference,
-              amount: 1?1:totalAmount,
+              amount: adjustAmount(totalAmount),
               currency: payload.currency.toUpperCase(),
               status: "pending",
               rawResponse: null,
@@ -106,7 +107,7 @@ export async function POST(request: NextRequest) {
 
           const initialized = await initializePayment({
             reference,
-            amount: 1?1:totalAmount,
+            amount: adjustAmount(totalAmount),
             currency: payload.currency.toUpperCase(),
             description: buildDescription(payload.items, payload.description),
             callbackUrl: payload.callbackUrl,
