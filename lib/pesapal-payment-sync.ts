@@ -1,3 +1,4 @@
+import mongoose from "mongoose";
 import { Order } from "../models/Order";
 import { Payment } from "../models/Payment";
 import { connectToDatabase } from "./mongoose";
@@ -83,46 +84,56 @@ export async function syncPesapalPaymentStatus(
     );
   }
 
-  const payment = await Payment.findOne({
-    provider: "pesapal",
-    reference,
-  });
+  const session = await mongoose.startSession();
 
-  if (!payment) {
-    throw new PesapalSyncError("Payment not found.", 404);
+  try {
+    const result = await session.withTransaction(async () => {
+      const payment = await Payment.findOne({
+        provider: "pesapal",
+        reference,
+      }).session(session);
+
+      if (!payment) {
+        throw new PesapalSyncError("Payment not found.", 404);
+      }
+
+      const paymentStatus = mapPesapalToPaymentStatus(
+        verified.statusCode,
+        verified.statusDescription,
+      );
+      const orderStatus = mapPaymentToOrderStatus(paymentStatus);
+
+      payment.status = paymentStatus;
+      payment.rawResponse = verified.rawResponse;
+
+      if (typeof verified.amount === "number") {
+        payment.amount = verified.amount;
+      }
+
+      if (typeof verified.currency === "string") {
+        payment.currency = verified.currency.toUpperCase();
+      }
+
+      await payment.save({ session });
+
+      const order = await Order.findOneAndUpdate(
+        { paymentId: payment._id },
+        { status: orderStatus },
+        { new: true, session },
+      );
+
+      return {
+        reference,
+        trackingId,
+        paymentStatus,
+        orderStatus,
+        payment,
+        order,
+      };
+    });
+
+    return result;
+  } finally {
+    await session.endSession();
   }
-
-  const paymentStatus = mapPesapalToPaymentStatus(
-    verified.statusCode,
-    verified.statusDescription,
-  );
-  const orderStatus = mapPaymentToOrderStatus(paymentStatus);
-
-  payment.status = paymentStatus;
-  payment.rawResponse = verified.rawResponse;
-
-  if (typeof verified.amount === "number") {
-    payment.amount = verified.amount;
-  }
-
-  if (typeof verified.currency === "string") {
-    payment.currency = verified.currency.toUpperCase();
-  }
-
-  await payment.save();
-
-  const order = await Order.findOneAndUpdate(
-    { paymentId: payment._id },
-    { status: orderStatus },
-    { new: true },
-  );
-
-  return {
-    reference,
-    trackingId,
-    paymentStatus,
-    orderStatus,
-    payment,
-    order,
-  };
 }

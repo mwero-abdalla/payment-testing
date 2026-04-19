@@ -1,5 +1,6 @@
 import { randomUUID } from "node:crypto";
 import { isAxiosError } from "axios";
+import mongoose from "mongoose";
 import { type NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
@@ -66,73 +67,95 @@ export async function POST(request: NextRequest) {
 
     await connectToDatabase();
 
-    const reference = createPesapalReference();
-
-    const payment = await Payment.create({
-      provider: "pesapal",
-      reference,
-      amount: totalAmount,
-      currency: payload.currency.toUpperCase(),
-      status: "pending",
-      rawResponse: null,
-    });
-
-    const order = await Order.create({
-      items: payload.items,
-      totalAmount,
-      status: "pending",
-      paymentProvider: "pesapal",
-      paymentId: payment._id,
-    });
+    const session = await mongoose.startSession();
 
     try {
-      const { notificationId, source: notificationSource } =
-        await resolvePesapalNotificationId();
+      const result = await session.withTransaction(async () => {
+        const reference = createPesapalReference();
 
-      const initialized = await initializePayment({
-        reference,
-        amount: totalAmount,
-        currency: payload.currency.toUpperCase(),
-        description: buildDescription(payload.items, payload.description),
-        callbackUrl: payload.callbackUrl,
-        notificationId,
-        email: payload.email,
-        firstName: payload.firstName,
-        lastName: payload.lastName,
-        phoneNumber: payload.phoneNumber,
-      });
+        const [payment] = await Payment.create(
+          [
+            {
+              provider: "pesapal",
+              reference,
+              amount: totalAmount,
+              currency: payload.currency.toUpperCase(),
+              status: "pending",
+              rawResponse: null,
+            },
+          ],
+          { session },
+        );
 
-      payment.status = "initialized";
-      payment.rawResponse = {
-        ...initialized.rawResponse,
-        orderTrackingId: initialized.orderTrackingId,
-        merchantReference: initialized.merchantReference,
-      };
-      await payment.save();
+        const order = await Order.create(
+          [
+            {
+              items: payload.items,
+              totalAmount,
+              status: "pending",
+              paymentProvider: "pesapal",
+              paymentId: payment._id,
+            },
+          ],
+          { session },
+        );
 
-      console.info("Pesapal payment initialized", {
-        orderId: order._id.toString(),
-        paymentId: payment._id.toString(),
-        reference,
-        orderTrackingId: initialized.orderTrackingId,
-        notificationSource,
-      });
+        try {
+          const { notificationId, source: notificationSource } =
+            await resolvePesapalNotificationId();
 
-      return NextResponse.json(
-        {
-          success: true,
-          data: {
-            orderId: order._id,
-            paymentId: payment._id,
+          const initialized = await initializePayment({
+            reference,
+            amount: totalAmount,
+            currency: payload.currency.toUpperCase(),
+            description: buildDescription(payload.items, payload.description),
+            callbackUrl: payload.callbackUrl,
+            notificationId,
+            email: payload.email,
+            firstName: payload.firstName,
+            lastName: payload.lastName,
+            phoneNumber: payload.phoneNumber,
+          });
+
+          payment.status = "initialized";
+          payment.rawResponse = {
+            ...initialized.rawResponse,
+            orderTrackingId: initialized.orderTrackingId,
+            merchantReference: initialized.merchantReference,
+          };
+          await payment.save({ session });
+
+          console.info("Pesapal payment initialized", {
+            orderId: order._id.toString(),
+            paymentId: payment._id.toString(),
             reference,
             orderTrackingId: initialized.orderTrackingId,
-            redirectUrl: initialized.redirectUrl,
-          },
-        },
-        { status: 201 },
-      );
+            notificationSource,
+          });
+
+          return {
+            success: true,
+            data: {
+              orderId: order._id,
+              paymentId: payment._id,
+              reference,
+              orderTrackingId: initialized.orderTrackingId,
+              redirectUrl: initialized.redirectUrl,
+            },
+          };
+        } catch (error) {
+          // If initializePayment fails, we still want to save the failed state
+          // but if we are in a transaction, we might want to let it ROLLBACK 
+          // to keep the DB clean of failed attempts.
+          // For now, we will re-throw here to trigger the outer catch 
+          // which will report the error but the transaction will rollback.
+          throw error;
+        }
+      });
+
+      return NextResponse.json(result, { status: 201 });
     } catch (error) {
-      console.error("Pesapal initialization failed", error);
+      console.error("Pesapal initialization failed (Transaction Rolled Back)", error);
 
       let status = 502;
       let detailedMessage = "Failed to initialize Pesapal checkout.";
@@ -153,23 +176,6 @@ export async function POST(request: NextRequest) {
         detailedMessage = error.message;
       }
 
-      payment.status = "failed";
-      payment.rawResponse = {
-        message: detailedMessage,
-        details,
-        error:
-          error instanceof Error
-            ? {
-                name: error.name,
-                message: error.message,
-              }
-            : String(error),
-      };
-      await payment.save();
-
-      order.status = "failed";
-      await order.save();
-
       return NextResponse.json(
         {
           success: false,
@@ -178,6 +184,8 @@ export async function POST(request: NextRequest) {
         },
         { status },
       );
+    } finally {
+      await session.endSession();
     }
   } catch (error) {
     if (error instanceof z.ZodError) {

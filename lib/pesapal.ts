@@ -1,6 +1,16 @@
 import axios, { type AxiosInstance } from "axios";
 import { z } from "zod";
 
+import { AppConfig } from "../models/AppConfig";
+import { connectToDatabase } from "./mongoose";
+
+const PESAPAL_TOKEN_CONFIG_KEY = "pesapal.auth.token";
+
+type StoredPesapalToken = {
+  value: string;
+  expiresAt: number;
+};
+
 function createPesapalClient(): AxiosInstance {
   return axios.create({
     baseURL:
@@ -128,10 +138,24 @@ async function getAccessToken(): Promise<string> {
   const pesapalClient = createPesapalClient();
   const { consumerKey, consumerSecret } = getPesapalCredentials();
 
-  if (cachedToken && cachedToken.expiresAt > Date.now()) {
+  // 1. Check memory cache
+  if (cachedToken && cachedToken.expiresAt > Date.now() + 30000) {
     return cachedToken.value;
   }
 
+  // 2. Check Database cache
+  await connectToDatabase();
+  const doc = await AppConfig.findOne({ key: PESAPAL_TOKEN_CONFIG_KEY });
+
+  if (doc?.value) {
+    const value = doc.value as StoredPesapalToken;
+    if (value.expiresAt > Date.now() + 30000) {
+      cachedToken = value;
+      return value.value;
+    }
+  }
+
+  // 3. Request new token from Pesapal
   const response = await pesapalClient.post("/api/Auth/RequestToken", {
     consumer_key: consumerKey,
     consumer_secret: consumerSecret,
@@ -139,14 +163,24 @@ async function getAccessToken(): Promise<string> {
 
   const parsed = authTokenResponseSchema.parse(response.data);
 
+  // Expiry usually comes as a date string, convert to timestamp
   const expiresAt = parsed.expiryDate
     ? new Date(parsed.expiryDate).getTime()
     : Date.now() + 4 * 60 * 1000;
 
-  cachedToken = {
+  const newToken: StoredPesapalToken = {
     value: parsed.token,
     expiresAt,
   };
+
+  // 4. Update both memory and DB
+  cachedToken = newToken;
+
+  await AppConfig.findOneAndUpdate(
+    { key: PESAPAL_TOKEN_CONFIG_KEY },
+    { key: PESAPAL_TOKEN_CONFIG_KEY, value: newToken },
+    { upsert: true, new: true },
+  );
 
   return parsed.token;
 }
