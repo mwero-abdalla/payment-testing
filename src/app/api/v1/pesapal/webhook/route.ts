@@ -3,7 +3,7 @@ import { type NextRequest, NextResponse } from "next/server";
 import {
   PesapalSyncError,
   syncPesapalPaymentStatus,
-} from "../../../../../../lib/pesapal-payment-sync";
+} from "@/lib/pesapal-payment-sync";
 
 type PesapalIncomingPayload = {
   orderTrackingId?: string;

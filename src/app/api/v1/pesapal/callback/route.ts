@@ -4,7 +4,7 @@ import { z } from "zod";
 import {
   PesapalSyncError,
   syncPesapalPaymentStatus,
-} from "../../../../../../lib/pesapal-payment-sync";
+} from "@/lib/pesapal-payment-sync";
 
 const callbackQuerySchema = z.object({
   orderTrackingId: z.string().optional(),

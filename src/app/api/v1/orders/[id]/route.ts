@@ -1,8 +1,8 @@
 import mongoose from "mongoose";
 import { type NextRequest, NextResponse } from "next/server";
 
-import { connectToDatabase } from "../../../../../../lib/mongoose";
-import { Order } from "../../../../../../models/Order";
+import { connectToDatabase } from "@/lib/mongoose";
+import { Order } from "@/models/Order";
 
 function isValidObjectId(id: string): boolean {
   return mongoose.Types.ObjectId.isValid(id);

@@ -4,11 +4,11 @@ import mongoose from "mongoose";
 import { type NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
-import { connectToDatabase } from "../../../../../../lib/mongoose";
-import { initializePayment } from "../../../../../../lib/pesapal";
-import { resolvePesapalNotificationId } from "../../../../../../lib/pesapal-ipn";
-import { Order } from "../../../../../../models/Order";
-import { Payment } from "../../../../../../models/Payment";
+import { connectToDatabase } from "@/lib/mongoose";
+import { initializePayment } from "@/lib/pesapal";
+import { resolvePesapalNotificationId } from "@/lib/pesapal-ipn";
+import { Order } from "@/models/Order";
+import { Payment } from "@/models/Payment";
 
 const cartItemSchema = z.object({
   name: z.string().min(1),

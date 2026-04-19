@@ -2,7 +2,7 @@ import { isAxiosError } from "axios";
 import { type NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
-import { syncPesapalIpn } from "../../../../../../../lib/pesapal-ipn";
+import { syncPesapalIpn } from "@/lib/pesapal-ipn";
 
 function getBearerToken(authHeader: string | null): string {
   if (!authHeader?.startsWith("Bearer ")) {

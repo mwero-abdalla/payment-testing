@@ -2,8 +2,8 @@ import mongoose from "mongoose";
 import { type NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
-import { connectToDatabase } from "../../../../../../lib/mongoose";
-import { Payment } from "../../../../../../models/Payment";
+import { connectToDatabase } from "@/lib/mongoose";
+import { Payment } from "@/models/Payment";
 
 const updatePaymentSchema = z
   .object({

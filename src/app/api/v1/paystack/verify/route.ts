@@ -1,10 +1,10 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
-import { connectToDatabase } from "../../../../../../lib/mongoose";
-import { verifyTransaction } from "../../../../../../lib/paystack";
-import { Order } from "../../../../../../models/Order";
-import { Payment } from "../../../../../../models/Payment";
+import { connectToDatabase } from "@/lib/mongoose";
+import { verifyTransaction } from "@/lib/paystack";
+import { Order } from "@/models/Order";
+import { Payment } from "@/models/Payment";
 
 const verifyPaystackSchema = z.object({
   reference: z.string().min(1),
