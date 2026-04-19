@@ -3,8 +3,7 @@ import { type NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
 import { connectToDatabase } from "../../../../../lib/mongoose";
-import { Order } from "../../../../../models/Order";
-import { Payment } from "../../../../../models/Payment";
+import { Order, Payment } from "../../../../../models";
 
 const orderItemSchema = z.object({
   name: z.string().min(1),
