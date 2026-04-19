@@ -79,7 +79,7 @@ async function verifyByReference(reference: string) {
   const order = await Order.findOneAndUpdate(
     { paymentId: payment._id },
     { status: orderStatus },
-    { new: true },
+    { returnDocument: "after" },
   );
 
   console.info("Paystack payment verified", {

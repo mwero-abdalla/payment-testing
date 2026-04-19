@@ -54,7 +54,7 @@ export async function saveIpnConfig(
   await AppConfig.findOneAndUpdate(
     { key: PESAPAL_IPN_CONFIG_KEY },
     { key: PESAPAL_IPN_CONFIG_KEY, value: payload },
-    { upsert: true, new: true },
+    { upsert: true, returnDocument: "after" },
   );
 
   return payload;

@@ -54,6 +54,7 @@ const initializePesapalResponseSchema = z.object({
       code: z.string().optional(),
       message: z.string().optional(),
     })
+    .nullable()
     .optional(),
 });
 
@@ -84,6 +85,7 @@ const registerPesapalIpnResponseSchema = z.object({
       code: z.string().optional(),
       message: z.string().optional(),
     })
+    .nullable()
     .optional(),
 });
 
@@ -179,7 +181,7 @@ async function getAccessToken(): Promise<string> {
   await AppConfig.findOneAndUpdate(
     { key: PESAPAL_TOKEN_CONFIG_KEY },
     { key: PESAPAL_TOKEN_CONFIG_KEY, value: newToken },
-    { upsert: true, new: true },
+    { upsert: true, returnDocument: "after" },
   );
 
   return parsed.token;

@@ -103,7 +103,7 @@ export async function PATCH(
     }
 
     const payment = await Payment.findByIdAndUpdate(id, updateDoc, {
-      new: true,
+      returnDocument: "after",
       runValidators: true,
     });
 

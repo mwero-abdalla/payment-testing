@@ -78,7 +78,7 @@ export async function POST(request: NextRequest) {
             {
               provider: "pesapal",
               reference,
-              amount: totalAmount,
+              amount: 1?1:totalAmount,
               currency: payload.currency.toUpperCase(),
               status: "pending",
               rawResponse: null,
@@ -106,7 +106,7 @@ export async function POST(request: NextRequest) {
 
           const initialized = await initializePayment({
             reference,
-            amount: totalAmount,
+            amount: 1?1:totalAmount,
             currency: payload.currency.toUpperCase(),
             description: buildDescription(payload.items, payload.description),
             callbackUrl: payload.callbackUrl,

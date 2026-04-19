@@ -119,7 +119,7 @@ export async function syncPesapalPaymentStatus(
       const order = await Order.findOneAndUpdate(
         { paymentId: payment._id },
         { status: orderStatus },
-        { new: true, session },
+        { returnDocument: "after", session },
       );
 
       return {
