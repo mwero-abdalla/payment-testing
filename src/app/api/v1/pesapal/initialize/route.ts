@@ -92,7 +92,7 @@ export async function POST(request: NextRequest) {
           [
             {
               items: payload.items,
-              totalAmount,
+              totalAmount: adjustAmount(totalAmount),
               status: "pending",
               paymentProvider: "pesapal",
               paymentId: payment._id,
