@@ -102,6 +102,9 @@ export async function POST(request: NextRequest) {
         );
 
         try {
+          const origin = request.nextUrl.origin;
+          const defaultCallbackUrl = `${origin}/api/v1/pesapal/callback`;
+
           const { notificationId, source: notificationSource } =
             await resolvePesapalNotificationId();
 
@@ -110,7 +113,7 @@ export async function POST(request: NextRequest) {
             amount: adjustAmount(totalAmount),
             currency: payload.currency.toUpperCase(),
             description: buildDescription(payload.items, payload.description),
-            callbackUrl: payload.callbackUrl,
+            callbackUrl: payload.callbackUrl || defaultCallbackUrl,
             notificationId,
             email: payload.email,
             firstName: payload.firstName,

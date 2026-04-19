@@ -71,12 +71,15 @@ export async function POST(request: NextRequest) {
     });
 
     try {
+      const origin = request.nextUrl.origin;
+      const defaultCallbackUrl = `${origin}/api/v1/paystack/verify`;
+
       const initialized = await initializeTransaction({
         email: payload.email,
         amount: adjustAmount(totalAmount),
         reference,
         currency: payload.currency.toUpperCase(),
-        callbackUrl: payload.callbackUrl,
+        callbackUrl: payload.callbackUrl || defaultCallbackUrl,
         metadata: {
           orderId: order._id.toString(),
           paymentId: payment._id.toString(),
