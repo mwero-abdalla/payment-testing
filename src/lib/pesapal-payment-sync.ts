@@ -122,6 +122,16 @@ export async function syncPesapalPaymentStatus(
         { returnDocument: "after", session },
       );
 
+      console.info("Pesapal payment callback processed", {
+        paymentId: payment._id.toString(),
+        orderId: order?._id.toString() ?? null,
+        reference,
+        trackingId,
+        paymentStatus,
+        orderStatus,
+        pesapalStatus: verified.statusDescription,
+      });
+
       return {
         reference,
         trackingId,

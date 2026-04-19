@@ -35,18 +35,7 @@ function extractMerchantReference(
 }
 
 async function processCallback(trackingId: string, merchantReference?: string) {
-  const synced = await syncPesapalPaymentStatus(trackingId, merchantReference);
-
-  console.info("Pesapal payment callback processed", {
-    paymentId: synced.payment._id.toString(),
-    orderId: synced.order?._id.toString() ?? null,
-    reference: synced.reference,
-    trackingId: synced.trackingId,
-    paymentStatus: synced.paymentStatus,
-    orderStatus: synced.orderStatus,
-  });
-
-  return synced;
+  return await syncPesapalPaymentStatus(trackingId, merchantReference);
 }
 
 export async function GET(request: NextRequest) {
@@ -73,12 +62,23 @@ export async function GET(request: NextRequest) {
     );
 
     const isSuccess = synced.orderStatus === "paid";
+    const isPending =
+      synced.orderStatus === "pending" || synced.orderStatus === "initialized";
+
     const redirectUrl = new URL(
       isSuccess ? "/pesalink/success" : "/pesalink",
       request.url,
     );
     redirectUrl.searchParams.set("status", synced.orderStatus);
     redirectUrl.searchParams.set("orderId", synced.order?._id.toString() || "");
+
+    if (!isSuccess && !isPending && synced.payment?.rawResponse) {
+      // Pass the status description from the raw response if it exists
+      const raw = synced.payment.rawResponse as any;
+      const message =
+        raw.payment_status_description || raw.message || "Payment failed";
+      redirectUrl.searchParams.set("message", message);
+    }
 
     return NextResponse.redirect(redirectUrl);
   } catch (error) {
