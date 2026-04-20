@@ -1,12 +1,17 @@
-# Payment Testing App
+## Architecture
 
-A Next.js 16 payment testing app that demonstrates two payment providers side by side: Paystack and Pesapal. The app records orders and payments in MongoDB, provides checkout pages for each provider, and exposes a dashboard for reviewing transaction history.
+The app uses a modular, library-like structure for payment logic:
+
+- **Unified Interface**: All providers implement a standard `AbstractPaymentProvider` interface.
+- **Payment Gateway**: A central `PaymentGateway` entry point manages provider registration and access.
+- **Provider Classes**: Clean, encapsulated classes for Paystack and Pesapal handle all API interactions and status normalization.
 
 ## What this app includes
 
 - Two checkout experiences:
   - [Paystack](docs/paystack/README.md)
   - [Pesapal](docs/pesapal/README.md)
+- **Decoupled Payment Library**: Logic resides in `src/lib/payments/` for easy reusability.
 - MongoDB-backed order and payment records
 - A dashboard for viewing stored orders and payments
 - API routes for initializing and verifying payments

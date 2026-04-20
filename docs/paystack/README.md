@@ -26,46 +26,31 @@ The Paystack checkout page:
 
 The page does not need a separate shipping form or complex cart state. It is intentionally minimal so the payment lifecycle is easy to test.
 
-## API routes
+## API Implementation
+
+The Paystack implementation is encapsulated in the `PaystackProvider` class and accessed through the `PaymentGateway`.
 
 ### `POST /api/v1/paystack/initialize`
 
-Creates a new payment session.
-
-Request body:
-- `email` - customer email address
-- `items` - cart items with name, price, and quantity
-- `currency` - optional currency code, defaults to `KES`
-- `callbackUrl` - optional override for the Paystack return URL
+This route uses `PaymentGateway.paystack().initialize()` to start a transaction.
 
 What it does:
-- Validates the incoming payload
-- Calculates the total amount from the cart items
-- Creates a payment record with provider `paystack`
-- Creates a matching order record
-- Calls the Paystack API to initialize the transaction
-- Stores the provider response in MongoDB
-- Returns the `authorizationUrl` and reference for checkout
+- Validates the payload using Zod.
+- Calculates the total amount.
+- Persists initial `Payment` and `Order` records in MongoDB.
+- Calls the Paystack API via the provider.
+- Returns the `authorizationUrl` for customer redirection.
 
-### `GET /api/v1/paystack/verify`
+### `GET /api/v1/paystack/verify` and `POST /api/v1/paystack/verify`
 
-Verifies a payment reference passed in the query string.
+These routes handle the customer redirect back from Paystack or direct verification requests. They use `PaymentGateway.paystack().verify()` to check the final status.
 
-Query parameters:
-- `reference` - the Paystack transaction reference
-
-### `POST /api/v1/paystack/verify`
-
-Verifies a payment reference passed in the request body.
-
-Request body:
-- `reference` - the Paystack transaction reference
-
-What verification does:
-- Confirms the transaction with Paystack
-- Maps the provider status to the local payment status
-- Updates the payment record
-- Updates the linked order status
+What it does:
+- Extracts the transaction reference.
+- Queries Paystack via the provider for the latest status.
+- Normalizes the status to the app's internal `PaymentStatus`.
+- Updates the `Payment` and `Order` records in MongoDB.
+- Redirects the user to a success or failure page in the frontend (for GET).
 
 ## Status mapping
 

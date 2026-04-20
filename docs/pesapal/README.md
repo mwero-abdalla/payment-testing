@@ -26,68 +26,33 @@ The Pesapal checkout page:
 - Sends payment data to `POST /api/v1/pesapal/initialize`
 - Redirects the customer to the Pesapal redirect URL returned by the API
 
-## API routes
+## API Implementation
+
+The Pesapal integration is encapsulated in the `PesapalProvider` class and accessed through the `PaymentGateway`.
 
 ### `POST /api/v1/pesapal/initialize`
 
-Creates and starts a Pesapal transaction.
-
-Request body:
-- `email`
-- `firstName`
-- `lastName`
-- `phoneNumber`
-- `items`
-- `currency` - optional, defaults to `KES`
-- `callbackUrl` - optional override for the browser callback URL
-- `description` - optional custom payment description
+This route uses `PaymentGateway.pesapal().initialize()` to start a transaction.
 
 What it does:
-- Validates the payload
-- Calculates the cart total
-- Creates a payment record with provider `pesapal`
-- Creates a matching order record
-- Resolves the Pesapal IPN ID from MongoDB first, then from env as fallback
-- Initializes the payment with Pesapal
-- Stores the provider response in MongoDB
-- Returns the redirect URL and tracking details
+- Validates the payload using Zod.
+- Calculates the cart total.
+- Resolves the IPN ID (notification ID) from MongoDB/Env.
+- Persists initial `Payment` and `Order` records.
+- Initializes the payment with Pesapal (handling automatic authentication and token persistence).
+- Returns the `redirectUrl` for customer redirection.
 
 ### `GET /api/v1/pesapal/callback`
 
-This is the browser redirect callback.
-
-It is used when the customer returns from Pesapal after checkout.
-
-What it does:
-- Reads the tracking ID and merchant reference from the callback query
-- Verifies the transaction with Pesapal
-- Maps the provider status to local payment and order statuses
-- Updates MongoDB records
-- Returns a JSON response
+This is the browser redirect. It uses the `syncPesapalPaymentStatus` helper which leverages `PaymentGateway.pesapal().verify()`.
 
 ### `POST /api/v1/pesapal/webhook`
 
-This is the IPN/webhook route.
-
-It handles server-to-server notifications from Pesapal.
-
-What it does:
-- Accepts JSON, form-encoded, or query-string payloads
-- Extracts the tracking ID and merchant reference
-- Verifies the transaction with Pesapal
-- Updates the payment and order records
-- Returns a JSON response
+This is the IPN/webhook route. It also uses the `syncPesapalPaymentStatus` helper to verify the payment server-side.
 
 ### `POST /api/v1/pesapal/ipn/sync`
 
-This is a protected helper endpoint used to automate IPN registration.
-
-How it works:
-- Reads `PESAPAL_WEBHOOK_URL`
-- Looks up an existing IPN registration for that URL
-- Registers the webhook URL with Pesapal if no IPN entry exists
-- Saves the returned `ipnId` in MongoDB
-- Returns the synced IPN details in the response
+Used to register and sync the Webhook URL with Pesapal using `PaymentGateway.pesapal().resolveOrRegisterIpn()`.
 
 ## Callback vs webhook
 
