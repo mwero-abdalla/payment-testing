@@ -1,6 +1,7 @@
 import type { Metadata } from "next";
 import { Geist, Geist_Mono } from "next/font/google";
 import "./globals.css";
+import { Navbar } from "@/components/Navbar";
 
 const geistSans = Geist({
   variable: "--font-geist-sans",
@@ -27,7 +28,15 @@ export default function RootLayout({
       lang="en"
       className={`${geistSans.variable} ${geistMono.variable} h-full antialiased`}
     >
-      <body className="min-h-full flex flex-col">{children}</body>
+      <body className="flex min-h-full flex-col bg-slate-50 text-slate-950 dark:bg-slate-950 dark:text-slate-50">
+        <Navbar />
+        <main className="flex-1">
+          {children}
+        </main>
+        <footer className="border-t border-white/5 py-8 text-center text-sm text-slate-500">
+          <p>© {new Date().getFullYear()} Payment Testing Workspace. Developed for sandbox validation.</p>
+        </footer>
+      </body>
     </html>
   );
 }
