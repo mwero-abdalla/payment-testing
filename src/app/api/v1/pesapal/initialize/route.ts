@@ -3,12 +3,12 @@ import { isAxiosError } from "axios";
 import mongoose from "mongoose";
 import { type NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-
+import { adjustAmount } from "@/lib/config";
 import { connectToDatabase } from "@/lib/mongoose";
 import { PaymentGateway } from "@/lib/payments/gateway";
+import { resolvePesapalNotificationId } from "@/lib/pesapal-ipn";
 import { Order } from "@/models/Order";
 import { Payment } from "@/models/Payment";
-import { adjustAmount } from "@/lib/config";
 
 const cartItemSchema = z.object({
   name: z.string().min(1),
@@ -104,6 +104,8 @@ export async function POST(request: NextRequest) {
           const origin = request.nextUrl.origin;
           const defaultCallbackUrl = `${origin}/api/v1/pesapal/callback`;
 
+          const { notificationId } = await resolvePesapalNotificationId();
+
           const initialized = await PaymentGateway.pesapal().initialize({
             reference,
             amount: adjustAmount(totalAmount),
@@ -115,6 +117,7 @@ export async function POST(request: NextRequest) {
             lastName: payload.lastName,
             phoneNumber: payload.phoneNumber,
             items: payload.items,
+            notificationId,
             metadata: {
               orderId: order._id.toString(),
               paymentId: payment._id.toString(),
@@ -150,7 +153,10 @@ export async function POST(request: NextRequest) {
 
       return NextResponse.json(result, { status: 201 });
     } catch (error) {
-      console.error("Pesapal initialization failed (Transaction Rolled Back)", error);
+      console.error(
+        "Pesapal initialization failed (Transaction Rolled Back)",
+        error,
+      );
 
       let status = 502;
       let detailedMessage = "Failed to initialize Pesapal checkout.";
@@ -160,12 +166,15 @@ export async function POST(request: NextRequest) {
         status = error.response?.status ?? 502;
         details = error.response?.data;
         const axiosMessage =
-          typeof details === "object" && details !== null && "message" in details
+          typeof details === "object" &&
+          details !== null &&
+          "message" in details
             ? String(details.message)
             : error.message;
         detailedMessage = `Pesapal API error: ${axiosMessage}`;
       } else if (error instanceof z.ZodError) {
-        detailedMessage = "Internal validation error during Pesapal initialization.";
+        detailedMessage =
+          "Internal validation error during Pesapal initialization.";
         details = error.issues;
       } else if (error instanceof Error) {
         detailedMessage = error.message;

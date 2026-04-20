@@ -18,6 +18,7 @@ export interface PaymentInitializationRequest {
   callbackUrl?: string;
   items: PaymentItem[];
   metadata?: Record<string, unknown>;
+  notificationId?: string;
 }
 
 export interface PaymentInitializationResult {
@@ -30,7 +31,12 @@ export interface PaymentInitializationResult {
   rawResponse: unknown;
 }
 
-export type PaymentStatus = "pending" | "initialized" | "successful" | "failed" | "cancelled";
+export type PaymentStatus =
+  | "pending"
+  | "initialized"
+  | "successful"
+  | "failed"
+  | "cancelled";
 
 export interface PaymentVerificationResult {
   success: boolean;

@@ -1,14 +1,15 @@
+import type { AbstractPaymentProvider } from "./base";
 import { PaystackProvider } from "./providers/paystack";
 import { PesapalProvider } from "./providers/pesapal";
-import { type PaymentProviderName } from "./types";
-import { type AbstractPaymentProvider } from "./base";
+import type { PaymentProviderName } from "./types";
 
 export class PaymentGateway {
-  private static providers: Map<PaymentProviderName, AbstractPaymentProvider> = new Map();
+  private static providers: Map<PaymentProviderName, AbstractPaymentProvider> =
+    new Map();
 
   static getProvider(name: PaymentProviderName): AbstractPaymentProvider {
-    if (this.providers.has(name)) {
-      return this.providers.get(name)!;
+    if (PaymentGateway.providers.has(name)) {
+      return PaymentGateway.providers.get(name)!;
     }
 
     let provider: AbstractPaymentProvider;
@@ -24,16 +25,16 @@ export class PaymentGateway {
         throw new Error(`Unsupported payment provider: ${name}`);
     }
 
-    this.providers.set(name, provider);
+    PaymentGateway.providers.set(name, provider);
     return provider;
   }
 
   // Simplified accessors
   static paystack() {
-    return this.getProvider("paystack") as PaystackProvider;
+    return PaymentGateway.getProvider("paystack") as PaystackProvider;
   }
 
   static pesapal() {
-    return this.getProvider("pesapal") as PesapalProvider;
+    return PaymentGateway.getProvider("pesapal") as PesapalProvider;
   }
 }

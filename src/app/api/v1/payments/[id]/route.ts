@@ -1,10 +1,9 @@
 import mongoose from "mongoose";
 import { type NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-
+import { adjustAmount } from "@/lib/config";
 import { connectToDatabase } from "@/lib/mongoose";
 import { Payment } from "@/models/Payment";
-import { adjustAmount } from "@/lib/config";
 
 const updatePaymentSchema = z
   .object({

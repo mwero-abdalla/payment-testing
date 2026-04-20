@@ -1,8 +1,8 @@
-import axios, { type AxiosInstance, AxiosError } from "axios";
-import { 
-  type PaymentInitializationRequest, 
-  type PaymentInitializationResult, 
-  type PaymentVerificationResult 
+import axios, { AxiosError, type AxiosInstance } from "axios";
+import type {
+  PaymentInitializationRequest,
+  PaymentInitializationResult,
+  PaymentVerificationResult,
 } from "./types";
 
 export abstract class AbstractPaymentProvider {
@@ -19,7 +19,9 @@ export abstract class AbstractPaymentProvider {
     });
   }
 
-  abstract initialize(request: PaymentInitializationRequest): Promise<PaymentInitializationResult>;
+  abstract initialize(
+    request: PaymentInitializationRequest,
+  ): Promise<PaymentInitializationResult>;
   abstract verify(trackingId: string): Promise<PaymentVerificationResult>;
 
   protected handleError(error: unknown, providerName: string): never {
@@ -27,7 +29,7 @@ export abstract class AbstractPaymentProvider {
       const message = error.response?.data?.message || error.message;
       throw new Error(`[${providerName}] ${message}`);
     }
-    
+
     if (error instanceof Error) {
       throw new Error(`[${providerName}] ${error.message}`);
     }

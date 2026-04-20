@@ -1,18 +1,18 @@
 "use client";
 
-import { useEffect, useMemo, useState } from "react";
-import Link from "next/link";
-import { 
-  ShoppingBag, 
-  CreditCard, 
-  Clock, 
-  CheckCircle2, 
-  XCircle, 
-  RefreshCcw,
+import {
   ArrowUpRight,
+  CheckCircle2,
+  Clock,
+  CreditCard,
+  History,
+  RefreshCcw,
+  ShoppingBag,
   TrendingUp,
-  History
+  XCircle,
 } from "lucide-react";
+import Link from "next/link";
+import { useEffect, useMemo, useState } from "react";
 import { StatusBadge } from "@/components/StatusBadge";
 import { cn } from "@/lib/utils";
 
@@ -134,12 +134,12 @@ export default function DashboardPage() {
 
   const stats = useMemo(() => {
     const totalOrders = orders.length;
-    const paidOrders = orders.filter(o => o.status === 'paid').length;
+    const paidOrders = orders.filter((o) => o.status === "paid").length;
     const totalRevenue = orders
-      .filter(o => o.status === 'paid')
+      .filter((o) => o.status === "paid")
       .reduce((sum, order) => sum + order.totalAmount, 0);
     const pendingAmount = orders
-      .filter(o => o.status === 'pending')
+      .filter((o) => o.status === "pending")
       .reduce((sum, order) => sum + order.totalAmount, 0);
 
     return [
@@ -149,15 +149,17 @@ export default function DashboardPage() {
         icon: TrendingUp,
         description: "Confirmed payments",
         color: "text-emerald-600 dark:text-emerald-400",
-        bg: "bg-emerald-50 dark:bg-emerald-500/10"
+        bg: "bg-emerald-50 dark:bg-emerald-500/10",
       },
       {
         name: "Conversion Rate",
-        value: totalOrders ? `${Math.round((paidOrders / totalOrders) * 100)}%` : "0%",
+        value: totalOrders
+          ? `${Math.round((paidOrders / totalOrders) * 100)}%`
+          : "0%",
         icon: ArrowUpRight,
         description: `${paidOrders} paid out of ${totalOrders}`,
         color: "text-sky-600 dark:text-sky-400",
-        bg: "bg-sky-50 dark:bg-sky-500/10"
+        bg: "bg-sky-50 dark:bg-sky-500/10",
       },
       {
         name: "Pending Volume",
@@ -165,8 +167,8 @@ export default function DashboardPage() {
         icon: Clock,
         description: "Awaiting confirmation",
         color: "text-amber-600 dark:text-amber-400",
-        bg: "bg-amber-50 dark:bg-amber-500/10"
-      }
+        bg: "bg-amber-50 dark:bg-amber-500/10",
+      },
     ];
   }, [orders]);
 
@@ -174,7 +176,9 @@ export default function DashboardPage() {
     <div className="mx-auto flex w-full max-w-7xl flex-col gap-8 px-4 py-8 sm:px-6 lg:px-8">
       <header className="flex flex-col gap-4 sm:flex-row sm:items-center sm:justify-between">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Analytics Dashboard</h1>
+          <h1 className="text-3xl font-bold tracking-tight">
+            Analytics Dashboard
+          </h1>
           <p className="mt-1 text-slate-600 dark:text-slate-400">
             Real-time insights across all payment providers.
           </p>
@@ -191,13 +195,23 @@ export default function DashboardPage() {
       {/* Stats Grid */}
       <section className="grid gap-6 sm:grid-cols-2 lg:grid-cols-3">
         {stats.map((stat) => (
-          <div key={stat.name} className="relative overflow-hidden rounded-3xl border border-white/10 bg-white p-6 shadow-sm dark:bg-slate-900/50">
+          <div
+            key={stat.name}
+            className="relative overflow-hidden rounded-3xl border border-white/10 bg-white p-6 shadow-sm dark:bg-slate-900/50"
+          >
             <div className="flex items-center gap-4">
-              <div className={cn("flex h-12 w-12 items-center justify-center rounded-2xl", stat.bg)}>
+              <div
+                className={cn(
+                  "flex h-12 w-12 items-center justify-center rounded-2xl",
+                  stat.bg,
+                )}
+              >
                 <stat.icon className={cn("h-6 w-6", stat.color)} />
               </div>
               <div>
-                <p className="text-sm font-medium text-slate-600 dark:text-slate-400">{stat.name}</p>
+                <p className="text-sm font-medium text-slate-600 dark:text-slate-400">
+                  {stat.name}
+                </p>
                 <p className="text-2xl font-bold">{stat.value}</p>
               </div>
             </div>
@@ -223,7 +237,12 @@ export default function DashboardPage() {
               <ShoppingBag className="h-5 w-5 text-slate-500" />
               <h2 className="text-lg font-semibold">Recent Orders</h2>
             </div>
-            <Link href="/" className="text-xs font-semibold text-sky-500 hover:underline">New Checkout</Link>
+            <Link
+              href="/"
+              className="text-xs font-semibold text-sky-500 hover:underline"
+            >
+              New Checkout
+            </Link>
           </div>
           <div className="overflow-x-auto">
             <table className="w-full text-left text-sm">
@@ -239,27 +258,36 @@ export default function DashboardPage() {
               </thead>
               <tbody className="divide-y divide-white/5">
                 {isLoading ? (
-                   [...Array(3)].map((_, i) => (
+                  [...Array(3)].map((_, i) => (
                     <tr key={i} className="animate-pulse">
                       <td colSpan={6} className="px-6 py-4">
                         <div className="h-4 w-full rounded bg-slate-100 dark:bg-white/5" />
                       </td>
                     </tr>
-                   ))
+                  ))
                 ) : orders.length ? (
                   orders.map((order) => (
-                    <tr key={order._id} className="transition-colors hover:bg-slate-50/50 dark:hover:bg-white/5">
+                    <tr
+                      key={order._id}
+                      className="transition-colors hover:bg-slate-50/50 dark:hover:bg-white/5"
+                    >
                       <td className="px-6 py-4 font-mono text-xs text-slate-500">
                         #{order._id.slice(-8)}
                       </td>
                       <td className="max-w-[200px] px-6 py-4 truncate text-xs text-slate-600 dark:text-slate-400">
-                        {order.items.map((item) => `${item.name} (x${item.quantity})`).join(", ")}
+                        {order.items
+                          .map((item) => `${item.name} (x${item.quantity})`)
+                          .join(", ")}
                       </td>
                       <td className="px-6 py-4 capitalize">
-                        <span className={cn(
-                          "rounded px-2 py-0.5 text-[10px] font-bold uppercase",
-                          order.paymentProvider === 'paystack' ? "bg-sky-500/10 text-sky-600" : "bg-amber-500/10 text-amber-600"
-                        )}>
+                        <span
+                          className={cn(
+                            "rounded px-2 py-0.5 text-[10px] font-bold uppercase",
+                            order.paymentProvider === "paystack"
+                              ? "bg-sky-500/10 text-sky-600"
+                              : "bg-amber-500/10 text-amber-600",
+                          )}
+                        >
                           {order.paymentProvider}
                         </span>
                       </td>
@@ -276,8 +304,12 @@ export default function DashboardPage() {
                   ))
                 ) : (
                   <tr>
-                    <td colSpan={6} className="px-6 py-12 text-center text-slate-500">
-                      No orders recorded yet. Start a test transaction to see data.
+                    <td
+                      colSpan={6}
+                      className="px-6 py-12 text-center text-slate-500"
+                    >
+                      No orders recorded yet. Start a test transaction to see
+                      data.
                     </td>
                   </tr>
                 )}
@@ -293,46 +325,52 @@ export default function DashboardPage() {
             <h2 className="text-lg font-semibold">Payment Logs</h2>
           </div>
           <div className="overflow-x-auto">
-             <table className="w-full text-left text-sm">
-                <thead className="bg-slate-50/50 text-slate-500 dark:bg-white/5">
-                  <tr>
-                    <th className="px-6 py-3 font-medium">Reference</th>
-                    <th className="px-6 py-3 font-medium">Provider</th>
-                    <th className="px-6 py-3 font-medium">Status</th>
-                    <th className="px-6 py-3 font-medium">Amount</th>
-                    <th className="px-6 py-3 font-medium">Synced At</th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-white/5">
-                  {isLoading ? null : payments.length ? (
-                    payments.map((payment) => (
-                      <tr key={payment._id} className="transition-colors hover:bg-slate-50/50 dark:hover:bg-white/5">
-                        <td className="px-6 py-4 font-mono text-xs">
-                          {payment.reference}
-                        </td>
-                        <td className="px-6 py-4 uppercase text-[10px] font-bold">
-                          {payment.provider}
-                        </td>
-                        <td className="px-6 py-4">
-                           <StatusBadge status={payment.status} />
-                        </td>
-                        <td className="px-6 py-4 font-semibold">
-                          {formatMoney(payment.amount, payment.currency)}
-                        </td>
-                        <td className="px-6 py-4 text-xs text-slate-500">
-                          {formatDate(payment.createdAt)}
-                        </td>
-                      </tr>
-                    ))
-                  ) : (
-                    <tr>
-                      <td colSpan={5} className="px-6 py-12 text-center text-slate-500">
-                        No payment logs found.
+            <table className="w-full text-left text-sm">
+              <thead className="bg-slate-50/50 text-slate-500 dark:bg-white/5">
+                <tr>
+                  <th className="px-6 py-3 font-medium">Reference</th>
+                  <th className="px-6 py-3 font-medium">Provider</th>
+                  <th className="px-6 py-3 font-medium">Status</th>
+                  <th className="px-6 py-3 font-medium">Amount</th>
+                  <th className="px-6 py-3 font-medium">Synced At</th>
+                </tr>
+              </thead>
+              <tbody className="divide-y divide-white/5">
+                {isLoading ? null : payments.length ? (
+                  payments.map((payment) => (
+                    <tr
+                      key={payment._id}
+                      className="transition-colors hover:bg-slate-50/50 dark:hover:bg-white/5"
+                    >
+                      <td className="px-6 py-4 font-mono text-xs">
+                        {payment.reference}
+                      </td>
+                      <td className="px-6 py-4 uppercase text-[10px] font-bold">
+                        {payment.provider}
+                      </td>
+                      <td className="px-6 py-4">
+                        <StatusBadge status={payment.status} />
+                      </td>
+                      <td className="px-6 py-4 font-semibold">
+                        {formatMoney(payment.amount, payment.currency)}
+                      </td>
+                      <td className="px-6 py-4 text-xs text-slate-500">
+                        {formatDate(payment.createdAt)}
                       </td>
                     </tr>
-                  )}
-                </tbody>
-             </table>
+                  ))
+                ) : (
+                  <tr>
+                    <td
+                      colSpan={5}
+                      className="px-6 py-12 text-center text-slate-500"
+                    >
+                      No payment logs found.
+                    </td>
+                  </tr>
+                )}
+              </tbody>
+            </table>
           </div>
         </section>
       </div>

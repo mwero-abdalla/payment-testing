@@ -1,8 +1,13 @@
 "use client";
 
-import { useSearchParams } from "next/navigation";
-import { CheckCircle2, ChevronRight, LayoutDashboard, ShoppingBag } from "lucide-react";
+import {
+  CheckCircle2,
+  ChevronRight,
+  LayoutDashboard,
+  ShoppingBag,
+} from "lucide-react";
 import Link from "next/link";
+import { useSearchParams } from "next/navigation";
 import { Suspense } from "react";
 
 function SuccessContent() {
@@ -22,7 +27,8 @@ function SuccessContent() {
         Thank you for your purchase!
       </h1>
       <p className="max-w-md text-lg text-muted-foreground">
-        We've received your payment. Your order is now being processed and you'll receive a confirmation email shortly.
+        We've received your payment. Your order is now being processed and
+        you'll receive a confirmation email shortly.
       </p>
 
       {orderId && (
@@ -54,7 +60,8 @@ function SuccessContent() {
           <div className="space-y-1">
             <h3 className="font-semibold">Next steps</h3>
             <p className="text-sm text-muted-foreground">
-              You can track your order status and view transaction details in your dashboard at any time.
+              You can track your order status and view transaction details in
+              your dashboard at any time.
             </p>
           </div>
           <ChevronRight className="h-5 w-5 text-muted-foreground" />
@@ -68,12 +75,14 @@ export default function PesalinkSuccessPage() {
   return (
     <main className="relative min-h-screen overflow-hidden bg-[radial-gradient(circle_at_top_right,_rgba(16,185,129,0.05),_transparent_40%),radial-gradient(circle_at_bottom_left,_rgba(16,185,129,0.05),_transparent_40%)]">
       <div className="mx-auto max-w-4xl px-4 py-20 sm:py-32">
-        <Suspense fallback={
-          <div className="flex animate-pulse flex-col items-center">
-            <div className="mb-6 h-24 w-24 rounded-full bg-slate-200 dark:bg-slate-800" />
-            <div className="h-10 w-64 rounded bg-slate-200 dark:bg-slate-800" />
-          </div>
-        }>
+        <Suspense
+          fallback={
+            <div className="flex animate-pulse flex-col items-center">
+              <div className="mb-6 h-24 w-24 rounded-full bg-slate-200 dark:bg-slate-800" />
+              <div className="h-10 w-64 rounded bg-slate-200 dark:bg-slate-800" />
+            </div>
+          }
+        >
           <SuccessContent />
         </Suspense>
       </div>

@@ -2,12 +2,11 @@ import { randomUUID } from "node:crypto";
 
 import { type NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-
+import { adjustAmount } from "@/lib/config";
 import { connectToDatabase } from "@/lib/mongoose";
 import { PaymentGateway } from "@/lib/payments/gateway";
 import { Order } from "@/models/Order";
 import { Payment } from "@/models/Payment";
-import { adjustAmount } from "@/lib/config";
 
 const cartItemSchema = z.object({
   name: z.string().min(1),

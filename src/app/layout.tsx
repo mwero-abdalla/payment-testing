@@ -30,11 +30,12 @@ export default function RootLayout({
     >
       <body className="flex min-h-full flex-col bg-slate-50 text-slate-950 dark:bg-slate-950 dark:text-slate-50">
         <Navbar />
-        <main className="flex-1">
-          {children}
-        </main>
+        <main className="flex-1">{children}</main>
         <footer className="border-t border-white/5 py-8 text-center text-sm text-slate-500">
-          <p>© {new Date().getFullYear()} Payment Testing Workspace. Developed for sandbox validation.</p>
+          <p>
+            © {new Date().getFullYear()} Payment Testing Workspace. Developed
+            for sandbox validation.
+          </p>
         </footer>
       </body>
     </html>

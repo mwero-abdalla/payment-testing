@@ -1,6 +1,13 @@
 import { cn } from "@/lib/utils";
 
-type StatusType = "pending" | "initialized" | "successful" | "paid" | "failed" | "cancelled" | string;
+type StatusType =
+  | "pending"
+  | "initialized"
+  | "successful"
+  | "paid"
+  | "failed"
+  | "cancelled"
+  | string;
 
 interface StatusBadgeProps {
   status: StatusType;
@@ -9,7 +16,7 @@ interface StatusBadgeProps {
 
 export function StatusBadge({ status, className }: StatusBadgeProps) {
   const normalizedStatus = status.toLowerCase();
-  
+
   const getStatusStyles = () => {
     switch (normalizedStatus) {
       case "successful":
@@ -32,7 +39,7 @@ export function StatusBadge({ status, className }: StatusBadgeProps) {
       className={cn(
         "inline-flex items-center rounded-full border px-2.5 py-0.5 text-xs font-semibold capitalize transition-colors",
         getStatusStyles(),
-        className
+        className,
       )}
     >
       {normalizedStatus}

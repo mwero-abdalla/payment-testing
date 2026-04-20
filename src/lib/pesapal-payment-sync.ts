@@ -1,8 +1,8 @@
 import mongoose from "mongoose";
-import { Order } from "@/models/Order";
-import { Payment } from "@/models/Payment";
 import { connectToDatabase } from "@/lib/mongoose";
 import { PaymentGateway } from "@/lib/payments/gateway";
+import { Order } from "@/models/Order";
+import { Payment } from "@/models/Payment";
 
 export class PesapalSyncError extends Error {
   status: number;

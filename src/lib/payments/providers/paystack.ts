@@ -1,11 +1,11 @@
-import { AbstractPaymentProvider } from "../base";
-import { 
-  type PaymentInitializationRequest, 
-  type PaymentInitializationResult, 
-  type PaymentVerificationResult,
-  type PaymentStatus
-} from "../types";
 import { z } from "zod";
+import { AbstractPaymentProvider } from "../base";
+import type {
+  PaymentInitializationRequest,
+  PaymentInitializationResult,
+  PaymentStatus,
+  PaymentVerificationResult,
+} from "../types";
 
 const paystackInitializeResponseSchema = z.object({
   status: z.boolean(),
@@ -41,11 +41,14 @@ export class PaystackProvider extends AbstractPaymentProvider {
     }
 
     super(baseURL);
-    
-    this.client.defaults.headers.common["Authorization"] = `Bearer ${secretKey}`;
+
+    this.client.defaults.headers.common["Authorization"] =
+      `Bearer ${secretKey}`;
   }
 
-  async initialize(request: PaymentInitializationRequest): Promise<PaymentInitializationResult> {
+  async initialize(
+    request: PaymentInitializationRequest,
+  ): Promise<PaymentInitializationResult> {
     try {
       const response = await this.client.post("/transaction/initialize", {
         email: request.email,
@@ -73,7 +76,9 @@ export class PaystackProvider extends AbstractPaymentProvider {
 
   async verify(reference: string): Promise<PaymentVerificationResult> {
     try {
-      const response = await this.client.get(`/transaction/verify/${reference}`);
+      const response = await this.client.get(
+        `/transaction/verify/${reference}`,
+      );
       const parsed = paystackVerifyResponseSchema.parse(response.data);
 
       return {

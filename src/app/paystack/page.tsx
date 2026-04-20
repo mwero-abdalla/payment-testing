@@ -1,11 +1,10 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { CreditCard, ShieldCheck, Mail, ArrowRight } from "lucide-react";
+import { ArrowRight, CreditCard, Mail, ShieldCheck } from "lucide-react";
+import { Suspense, useMemo, useState } from "react";
 import { Cart, calculateCartTotal, STATIC_CART_ITEMS } from "@/components/Cart";
 import { CheckoutButton } from "@/components/CheckoutButton";
 import { CheckoutStatus } from "@/components/CheckoutStatus";
-import { Suspense } from "react";
 import { cn } from "@/lib/utils";
 
 type InitializePaystackResponse = {
@@ -77,11 +76,16 @@ export default function PaystackPage() {
               Complete your <span className="text-sky-500">purchase.</span>
             </h1>
             <p className="max-w-2xl text-lg text-slate-600 dark:text-slate-400">
-              You are using the Paystack sandbox environment. No real funds will be deducted during this test.
+              You are using the Paystack sandbox environment. No real funds will
+              be deducted during this test.
             </p>
           </header>
 
-          <Suspense fallback={<div className="h-24 w-full animate-pulse rounded-2xl bg-slate-100 dark:bg-white/5" />}>
+          <Suspense
+            fallback={
+              <div className="h-24 w-full animate-pulse rounded-2xl bg-slate-100 dark:bg-white/5" />
+            }
+          >
             <CheckoutStatus />
           </Suspense>
 
@@ -96,10 +100,13 @@ export default function PaystackPage() {
           <div className="sticky top-24 space-y-6">
             <section className="rounded-[2rem] border border-white/10 bg-slate-900 p-8 text-white shadow-2xl dark:bg-black/40">
               <h2 className="mb-8 text-2xl font-bold">Checkout</h2>
-              
+
               <div className="space-y-6">
                 <div className="space-y-3">
-                  <label htmlFor="paystack-email" className="flex items-center gap-2 text-sm font-medium text-slate-300">
+                  <label
+                    htmlFor="paystack-email"
+                    className="flex items-center gap-2 text-sm font-medium text-slate-300"
+                  >
                     <Mail className="h-4 w-4" />
                     Billing Email
                   </label>
@@ -144,7 +151,7 @@ export default function PaystackPage() {
                   label="Initialize Payment"
                   className="w-full bg-sky-500 py-6 text-base hover:bg-sky-400"
                 />
-                
+
                 <div className="flex items-center justify-center gap-2 text-[10px] uppercase tracking-widest text-slate-500">
                   <ShieldCheck className="h-3 w-3" />
                   Secured by Paystack
@@ -155,7 +162,8 @@ export default function PaystackPage() {
             <div className="rounded-[2rem] border border-white/10 bg-white p-6 shadow-sm dark:bg-slate-900/50">
               <h4 className="mb-2 text-sm font-bold">Test Credentials</h4>
               <p className="text-xs leading-relaxed text-slate-600 dark:text-slate-400">
-                In the Paystack popup, use any of the test cards provided in their documentation to simulate successful or failed payments.
+                In the Paystack popup, use any of the test cards provided in
+                their documentation to simulate successful or failed payments.
               </p>
             </div>
           </div>

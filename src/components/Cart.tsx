@@ -42,9 +42,17 @@ export function Cart({
       <div className="space-y-4">
         <div className="space-y-3">
           {items.map((item) => (
-            <div key={`${item.name}-${item.price}`} className="flex justify-between text-sm">
-              <span className="text-slate-400">{item.name} <span className="text-slate-500">x{item.quantity}</span></span>
-              <span className="font-medium text-slate-200">{formatAmount(item.price * item.quantity, currency)}</span>
+            <div
+              key={`${item.name}-${item.price}`}
+              className="flex justify-between text-sm"
+            >
+              <span className="text-slate-400">
+                {item.name}{" "}
+                <span className="text-slate-500">x{item.quantity}</span>
+              </span>
+              <span className="font-medium text-slate-200">
+                {formatAmount(item.price * item.quantity, currency)}
+              </span>
             </div>
           ))}
         </div>

@@ -1,14 +1,14 @@
-import { AbstractPaymentProvider } from "../base";
-import { 
-  type PaymentInitializationRequest, 
-  type PaymentInitializationResult, 
-  type PaymentVerificationResult,
-  type PaymentStatus,
-  type IPNRegistrationResult
-} from "../types";
 import { z } from "zod";
-import { AppConfig } from "@/models/AppConfig";
 import { connectToDatabase } from "@/lib/mongoose";
+import { AppConfig } from "@/models/AppConfig";
+import { AbstractPaymentProvider } from "../base";
+import type {
+  IPNRegistrationResult,
+  PaymentInitializationRequest,
+  PaymentInitializationResult,
+  PaymentStatus,
+  PaymentVerificationResult,
+} from "../types";
 
 const authTokenResponseSchema = z.object({
   token: z.string(),
@@ -19,9 +19,12 @@ const initializePesapalResponseSchema = z.object({
   order_tracking_id: z.string(),
   merchant_reference: z.string(),
   redirect_url: z.string().url(),
-  error: z.object({
-    message: z.string().optional(),
-  }).nullable().optional(),
+  error: z
+    .object({
+      message: z.string().optional(),
+    })
+    .nullable()
+    .optional(),
 });
 
 const verifyPesapalResponseSchema = z.object({
@@ -30,7 +33,11 @@ const verifyPesapalResponseSchema = z.object({
   currency: z.string().optional(),
   merchant_reference: z.string().optional(),
   tracking_id: z.string().optional(),
-  payment_status_code: z.string().or(z.number()).optional().transform(v => String(v)),
+  payment_status_code: z
+    .string()
+    .or(z.number())
+    .optional()
+    .transform((v) => String(v)),
 });
 
 const registerPesapalIpnResponseSchema = z.object({
@@ -38,26 +45,33 @@ const registerPesapalIpnResponseSchema = z.object({
   ipn_url: z.string().optional(),
   url: z.string().optional(),
   status: z.string().optional(),
-  error: z.object({
-    message: z.string().optional(),
-  }).nullable().optional(),
+  error: z
+    .object({
+      message: z.string().optional(),
+    })
+    .nullable()
+    .optional(),
 });
 
 export class PesapalProvider extends AbstractPaymentProvider {
   private static TOKEN_KEY = "pesapal.auth.token";
 
   constructor() {
-    const baseURL = process.env.PESAPAL_BASE_URL ?? "https://cybqa.pesapal.com/pesapalv3";
+    const baseURL =
+      process.env.PESAPAL_BASE_URL ?? "https://cybqa.pesapal.com/pesapalv3";
     super(baseURL);
   }
 
   private async getAccessToken(): Promise<string> {
     await connectToDatabase();
-    
+
     // Check DB for existing token
     const doc = await AppConfig.findOne({ key: PesapalProvider.TOKEN_KEY });
     if (doc?.value) {
-      const { value, expiresAt } = doc.value as { value: string; expiresAt: number };
+      const { value, expiresAt } = doc.value as {
+        value: string;
+        expiresAt: number;
+      };
       if (expiresAt > Date.now() + 30000) {
         return value;
       }
@@ -68,7 +82,9 @@ export class PesapalProvider extends AbstractPaymentProvider {
     const consumerSecret = process.env.PESAPAL_CONSUMER_SECRET;
 
     if (!consumerKey || !consumerSecret) {
-      throw new Error("PESAPAL_CONSUMER_KEY and PESAPAL_CONSUMER_SECRET must be set.");
+      throw new Error(
+        "PESAPAL_CONSUMER_KEY and PESAPAL_CONSUMER_SECRET must be set.",
+      );
     }
 
     const response = await this.client.post("/api/Auth/RequestToken", {
@@ -86,16 +102,18 @@ export class PesapalProvider extends AbstractPaymentProvider {
     await AppConfig.findOneAndUpdate(
       { key: PesapalProvider.TOKEN_KEY },
       { key: PesapalProvider.TOKEN_KEY, value: newToken },
-      { upsert: true }
+      { upsert: true },
     );
 
     return parsed.token;
   }
 
-  async initialize(request: PaymentInitializationRequest): Promise<PaymentInitializationResult> {
+  async initialize(
+    request: PaymentInitializationRequest,
+  ): Promise<PaymentInitializationResult> {
     try {
       const token = await this.getAccessToken();
-      
+
       const response = await this.client.post(
         "/api/Transactions/SubmitOrderRequest",
         {
@@ -104,7 +122,7 @@ export class PesapalProvider extends AbstractPaymentProvider {
           amount: request.amount,
           description: request.description || "Order Payment",
           callback_url: request.callbackUrl,
-          notification_id: process.env.PESAPAL_IPN_ID, // Should ideally be passed in or resolved
+          notification_id: request.notificationId || process.env.PESAPAL_IPN_ID,
           billing_address: {
             email_address: request.email,
             phone_number: request.phoneNumber || "",
@@ -118,8 +136,8 @@ export class PesapalProvider extends AbstractPaymentProvider {
           },
         },
         {
-          headers: { Authorization: `Bearer ${token}` }
-        }
+          headers: { Authorization: `Bearer ${token}` },
+        },
       );
 
       const parsed = initializePesapalResponseSchema.parse(response.data);
@@ -147,8 +165,8 @@ export class PesapalProvider extends AbstractPaymentProvider {
       const response = await this.client.get(
         `/api/Transactions/GetTransactionStatus?orderTrackingId=${encodeURIComponent(trackingId)}`,
         {
-          headers: { Authorization: `Bearer ${token}` }
-        }
+          headers: { Authorization: `Bearer ${token}` },
+        },
       );
 
       const parsed = verifyPesapalResponseSchema.parse(response.data);
@@ -179,8 +197,8 @@ export class PesapalProvider extends AbstractPaymentProvider {
           ipn_notification_type: "POST",
         },
         {
-          headers: { Authorization: `Bearer ${token}` }
-        }
+          headers: { Authorization: `Bearer ${token}` },
+        },
       );
 
       const parsed = registerPesapalIpnResponseSchema.parse(response.data);
@@ -201,26 +219,34 @@ export class PesapalProvider extends AbstractPaymentProvider {
     }
   }
 
-  async listIpns(): Promise<Array<{ ipnId: string; url: string; status?: string }>> {
+  async listIpns(): Promise<
+    Array<{ ipnId: string; url: string; status?: string }>
+  > {
     try {
       const token = await this.getAccessToken();
 
       const response = await this.client.get("/api/URLSetup/GetIpnList", {
-        headers: { Authorization: `Bearer ${token}` }
+        headers: { Authorization: `Bearer ${token}` },
       });
 
-      const entries = Array.isArray(response.data) ? response.data : (response.data.data ?? []);
-      return entries.map((entry: any) => ({
-        ipnId: entry.ipn_id,
-        url: entry.ipn_url || entry.url,
-        status: entry.status,
-      })).filter((e: any) => e.ipnId && e.url);
+      const entries = Array.isArray(response.data)
+        ? response.data
+        : (response.data.data ?? []);
+      return entries
+        .map((entry: any) => ({
+          ipnId: entry.ipn_id,
+          url: entry.ipn_url || entry.url,
+          status: entry.status,
+        }))
+        .filter((e: any) => e.ipnId && e.url);
     } catch (error) {
       return this.handleError(error, "Pesapal");
     }
   }
 
-  async resolveOrRegisterIpn(webhookUrl: string): Promise<{ ipnId: string; url: string; status?: string }> {
+  async resolveOrRegisterIpn(
+    webhookUrl: string,
+  ): Promise<{ ipnId: string; url: string; status?: string }> {
     const existing = (await this.listIpns()).find(
       (entry) => entry.url === webhookUrl,
     );

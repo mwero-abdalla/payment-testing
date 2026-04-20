@@ -1,13 +1,19 @@
 "use client";
 
-import { useMemo, useState } from "react";
-import { Wallet, ShieldCheck, User, Mail, Phone, ArrowLeft } from "lucide-react";
+import {
+  ArrowLeft,
+  Mail,
+  Phone,
+  ShieldCheck,
+  User,
+  Wallet,
+} from "lucide-react";
+import Link from "next/link";
+import { Suspense, useMemo, useState } from "react";
 import { Cart, calculateCartTotal, STATIC_CART_ITEMS } from "@/components/Cart";
 import { CheckoutButton } from "@/components/CheckoutButton";
 import { CheckoutStatus } from "@/components/CheckoutStatus";
-import { Suspense } from "react";
 import { cn } from "@/lib/utils";
-import Link from "next/link";
 
 type InitializePesapalResponse = {
   success: boolean;
@@ -82,7 +88,7 @@ export default function PesalinkPage() {
         {/* Left Column: Form & Header */}
         <div className="flex flex-col gap-8">
           <header className="space-y-4">
-             <div className="inline-flex items-center gap-2 rounded-full bg-amber-500/10 px-3 py-1 text-xs font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400">
+            <div className="inline-flex items-center gap-2 rounded-full bg-amber-500/10 px-3 py-1 text-xs font-bold uppercase tracking-wider text-amber-600 dark:text-amber-400">
               <Wallet className="h-3 w-3" />
               Pesapal V3 Integration
             </div>
@@ -90,11 +96,16 @@ export default function PesalinkPage() {
               Checkout with <span className="text-amber-500">Pesapal.</span>
             </h1>
             <p className="max-w-2xl text-lg text-slate-600 dark:text-slate-400">
-              Provide your details to continue to the secure payment portal. Pesapal supports mobile money and cards in East Africa.
+              Provide your details to continue to the secure payment portal.
+              Pesapal supports mobile money and cards in East Africa.
             </p>
           </header>
 
-          <Suspense fallback={<div className="h-24 w-full animate-pulse rounded-2xl bg-slate-100 dark:bg-white/5" />}>
+          <Suspense
+            fallback={
+              <div className="h-24 w-full animate-pulse rounded-2xl bg-slate-100 dark:bg-white/5" />
+            }
+          >
             <CheckoutStatus />
           </Suspense>
 
@@ -103,10 +114,13 @@ export default function PesalinkPage() {
               <User className="h-5 w-5 text-amber-500" />
               Billing Information
             </h2>
-            
+
             <div className="grid gap-6 sm:grid-cols-2">
               <div className="space-y-2">
-                <label htmlFor="pesapal-first-name" className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                <label
+                  htmlFor="pesapal-first-name"
+                  className="text-sm font-medium text-slate-700 dark:text-slate-300"
+                >
                   First name
                 </label>
                 <input
@@ -119,7 +133,10 @@ export default function PesalinkPage() {
               </div>
 
               <div className="space-y-2">
-                <label htmlFor="pesapal-last-name" className="text-sm font-medium text-slate-700 dark:text-slate-300">
+                <label
+                  htmlFor="pesapal-last-name"
+                  className="text-sm font-medium text-slate-700 dark:text-slate-300"
+                >
                   Last name
                 </label>
                 <input
@@ -132,7 +149,10 @@ export default function PesalinkPage() {
               </div>
 
               <div className="space-y-2 sm:col-span-2">
-                <label htmlFor="pesapal-email" className="flex items-center gap-2 text-sm font-medium text-slate-700 dark:text-slate-300">
+                <label
+                  htmlFor="pesapal-email"
+                  className="flex items-center gap-2 text-sm font-medium text-slate-700 dark:text-slate-300"
+                >
                   <Mail className="h-4 w-4" />
                   Email address
                 </label>
@@ -147,7 +167,10 @@ export default function PesalinkPage() {
               </div>
 
               <div className="space-y-2 sm:col-span-2">
-                <label htmlFor="pesapal-phone" className="flex items-center gap-2 text-sm font-medium text-slate-700 dark:text-slate-300">
+                <label
+                  htmlFor="pesapal-phone"
+                  className="flex items-center gap-2 text-sm font-medium text-slate-700 dark:text-slate-300"
+                >
                   <Phone className="h-4 w-4" />
                   Phone number
                 </label>
@@ -169,15 +192,21 @@ export default function PesalinkPage() {
           <div className="sticky top-24 space-y-6">
             <section className="rounded-[2.5rem] border border-white/10 bg-slate-900 p-8 text-white shadow-2xl dark:bg-black/40">
               <h2 className="mb-6 text-2xl font-bold">Order Summary</h2>
-              
+
               <div className="mb-8 max-h-[300px] overflow-y-auto pr-2 custom-scrollbar">
-                <Cart items={STATIC_CART_ITEMS} currency="KES" variant="minimal" />
+                <Cart
+                  items={STATIC_CART_ITEMS}
+                  currency="KES"
+                  variant="minimal"
+                />
               </div>
 
               <div className="space-y-4 border-t border-white/10 pt-6">
                 <div className="flex items-center justify-between text-slate-400">
                   <span>Total Amount</span>
-                  <span className="text-2xl font-bold text-amber-500">KES {total.toFixed(2)}</span>
+                  <span className="text-2xl font-bold text-amber-500">
+                    KES {total.toFixed(2)}
+                  </span>
                 </div>
 
                 {error ? (
@@ -200,9 +229,9 @@ export default function PesalinkPage() {
                 </div>
               </div>
             </section>
-            
-            <Link 
-              href="/paystack" 
+
+            <Link
+              href="/paystack"
               className="flex items-center justify-center gap-2 rounded-2xl border border-white/10 p-4 text-sm font-medium transition-colors hover:bg-slate-50 dark:hover:bg-white/5"
             >
               <ArrowLeft className="h-4 w-4" />

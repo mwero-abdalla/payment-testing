@@ -1,8 +1,8 @@
 "use client";
 
+import { CreditCard, Home, LayoutDashboard, Wallet } from "lucide-react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
-import { LayoutDashboard, CreditCard, Home, Wallet } from "lucide-react";
 import { cn } from "@/lib/utils";
 
 const NAV_ITEMS = [
@@ -19,11 +19,16 @@ export function Navbar() {
     <nav className="sticky top-0 z-50 w-full border-b border-white/10 bg-white/70 backdrop-blur-md dark:bg-slate-950/70">
       <div className="mx-auto flex h-16 max-w-7xl items-center justify-between px-4 sm:px-6 lg:px-8">
         <div className="flex items-center gap-8">
-          <Link href="/" className="flex items-center gap-2 transition-opacity hover:opacity-80">
+          <Link
+            href="/"
+            className="flex items-center gap-2 transition-opacity hover:opacity-80"
+          >
             <div className="flex h-8 w-8 items-center justify-center rounded-lg bg-slate-950 text-white dark:bg-white dark:text-slate-950">
               <span className="text-lg font-bold">P</span>
             </div>
-            <span className="text-lg font-semibold tracking-tight">Payment Testing</span>
+            <span className="text-lg font-semibold tracking-tight">
+              Payment Testing
+            </span>
           </Link>
 
           <div className="hidden md:flex md:items-center md:gap-1">
@@ -39,7 +44,7 @@ export function Navbar() {
                     "flex items-center gap-2 rounded-full px-4 py-2 text-sm font-medium transition-all duration-200",
                     isActive
                       ? "bg-slate-950 text-white dark:bg-white dark:text-slate-950"
-                      : "text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-white/10"
+                      : "text-slate-600 hover:bg-slate-100 dark:text-slate-400 dark:hover:bg-white/10",
                   )}
                 >
                   <Icon className="h-4 w-4" />
@@ -57,7 +62,7 @@ export function Navbar() {
           </span>
         </div>
       </div>
-      
+
       {/* Mobile Navigation (minimal for now) */}
       <div className="flex items-center justify-center gap-4 border-t border-white/5 py-2 md:hidden">
         {NAV_ITEMS.map((item) => {
@@ -70,7 +75,7 @@ export function Navbar() {
               href={item.href}
               className={cn(
                 "p-2 transition-colors",
-                isActive ? "text-slate-950 dark:text-white" : "text-slate-500"
+                isActive ? "text-slate-950 dark:text-white" : "text-slate-500",
               )}
             >
               <Icon className="h-5 w-5" />

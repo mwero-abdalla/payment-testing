@@ -1,10 +1,9 @@
 import mongoose from "mongoose";
 import { type NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
-
+import { adjustAmount } from "@/lib/config";
 import { connectToDatabase } from "@/lib/mongoose";
 import { Order } from "@/models";
-import { adjustAmount } from "@/lib/config";
 
 const orderItemSchema = z.object({
   name: z.string().min(1),
@@ -81,7 +80,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const errorMessage = error instanceof Error ? error.message : "Unknown error";
+    const errorMessage =
+      error instanceof Error ? error.message : "Unknown error";
     console.error("Failed to create order:", error);
 
     return NextResponse.json(
@@ -146,7 +146,8 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const errorMessage = error instanceof Error ? error.message : "Unknown error";
+    const errorMessage =
+      error instanceof Error ? error.message : "Unknown error";
     console.error("Failed to list orders:", error);
 
     return NextResponse.json(
