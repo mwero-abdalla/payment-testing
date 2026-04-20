@@ -15,6 +15,7 @@ export const STATIC_CART_ITEMS: Item[] = [
 type CartProps = {
   items?: Item[];
   currency?: string;
+  variant?: "default" | "minimal";
 };
 
 function formatAmount(amount: number, currency: string): string {
@@ -32,8 +33,24 @@ export function calculateCartTotal(items: Item[]): number {
 export function Cart({
   items = STATIC_CART_ITEMS,
   currency = "KES",
+  variant = "default",
 }: CartProps) {
   const total = calculateCartTotal(items);
+
+  if (variant === "minimal") {
+    return (
+      <div className="space-y-4">
+        <div className="space-y-3">
+          {items.map((item) => (
+            <div key={`${item.name}-${item.price}`} className="flex justify-between text-sm">
+              <span className="text-slate-400">{item.name} <span className="text-slate-500">x{item.quantity}</span></span>
+              <span className="font-medium text-slate-200">{formatAmount(item.price * item.quantity, currency)}</span>
+            </div>
+          ))}
+        </div>
+      </div>
+    );
+  }
 
   return (
     <section className="space-y-4 rounded-xl border border-border bg-background/80 p-6 shadow-sm">

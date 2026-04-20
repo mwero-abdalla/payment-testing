@@ -4,7 +4,7 @@ import { type NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
 import { connectToDatabase } from "@/lib/mongoose";
-import { initializeTransaction } from "@/lib/paystack";
+import { PaymentGateway } from "@/lib/payments/gateway";
 import { Order } from "@/models/Order";
 import { Payment } from "@/models/Payment";
 import { adjustAmount } from "@/lib/config";
@@ -74,12 +74,13 @@ export async function POST(request: NextRequest) {
       const origin = request.nextUrl.origin;
       const defaultCallbackUrl = `${origin}/api/v1/paystack/verify`;
 
-      const initialized = await initializeTransaction({
+      const initialized = await PaymentGateway.paystack().initialize({
         email: payload.email,
         amount: adjustAmount(totalAmount),
         reference,
         currency: payload.currency.toUpperCase(),
         callbackUrl: payload.callbackUrl || defaultCallbackUrl,
+        items: payload.items,
         metadata: {
           orderId: order._id.toString(),
           paymentId: payment._id.toString(),

@@ -5,8 +5,7 @@ import { type NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
 import { connectToDatabase } from "@/lib/mongoose";
-import { initializePayment } from "@/lib/pesapal";
-import { resolvePesapalNotificationId } from "@/lib/pesapal-ipn";
+import { PaymentGateway } from "@/lib/payments/gateway";
 import { Order } from "@/models/Order";
 import { Payment } from "@/models/Payment";
 import { adjustAmount } from "@/lib/config";
@@ -105,36 +104,33 @@ export async function POST(request: NextRequest) {
           const origin = request.nextUrl.origin;
           const defaultCallbackUrl = `${origin}/api/v1/pesapal/callback`;
 
-          const { notificationId, source: notificationSource } =
-            await resolvePesapalNotificationId();
-
-          const initialized = await initializePayment({
+          const initialized = await PaymentGateway.pesapal().initialize({
             reference,
             amount: adjustAmount(totalAmount),
             currency: payload.currency.toUpperCase(),
             description: buildDescription(payload.items, payload.description),
             callbackUrl: payload.callbackUrl || defaultCallbackUrl,
-            notificationId,
             email: payload.email,
             firstName: payload.firstName,
             lastName: payload.lastName,
             phoneNumber: payload.phoneNumber,
+            items: payload.items,
+            metadata: {
+              orderId: order._id.toString(),
+              paymentId: payment._id.toString(),
+              provider: "pesapal",
+            },
           });
 
           payment.status = "initialized";
-          payment.rawResponse = {
-            ...initialized.rawResponse,
-            orderTrackingId: initialized.orderTrackingId,
-            merchantReference: initialized.merchantReference,
-          };
+          payment.rawResponse = initialized.rawResponse;
           await payment.save({ session });
 
           console.info("Pesapal payment initialized", {
             orderId: order._id.toString(),
             paymentId: payment._id.toString(),
             reference,
-            orderTrackingId: initialized.orderTrackingId,
-            notificationSource,
+            orderTrackingId: initialized.trackingId,
           });
 
           return {
@@ -143,16 +139,11 @@ export async function POST(request: NextRequest) {
               orderId: order._id,
               paymentId: payment._id,
               reference,
-              orderTrackingId: initialized.orderTrackingId,
+              orderTrackingId: initialized.trackingId,
               redirectUrl: initialized.redirectUrl,
             },
           };
         } catch (error) {
-          // If initializePayment fails, we still want to save the failed state
-          // but if we are in a transaction, we might want to let it ROLLBACK 
-          // to keep the DB clean of failed attempts.
-          // For now, we will re-throw here to trigger the outer catch 
-          // which will report the error but the transaction will rollback.
           throw error;
         }
       });

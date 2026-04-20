@@ -2,7 +2,7 @@ import { type NextRequest, NextResponse } from "next/server";
 import { z } from "zod";
 
 import { connectToDatabase } from "@/lib/mongoose";
-import { verifyTransaction } from "@/lib/paystack";
+import { PaymentGateway } from "@/lib/payments/gateway";
 import { Order } from "@/models/Order";
 import { Payment } from "@/models/Payment";
 
@@ -10,30 +10,10 @@ const verifyPaystackSchema = z.object({
   reference: z.string().min(1),
 });
 
-function mapPaystackToPaymentStatus(
-  status: string,
-): "successful" | "failed" | "pending" | "cancelled" {
-  const normalized = status.toLowerCase();
-
-  if (normalized === "success") {
-    return "successful";
-  }
-
-  if (normalized === "abandoned" || normalized === "cancelled") {
-    return "cancelled";
-  }
-
-  if (normalized === "failed" || normalized === "reversed") {
-    return "failed";
-  }
-
-  return "pending";
-}
-
 function mapPaymentToOrderStatus(
-  paymentStatus: "successful" | "failed" | "pending" | "cancelled",
+  paymentStatus: string,
 ): "paid" | "failed" | "pending" | "cancelled" {
-  if (paymentStatus === "successful") {
+  if (paymentStatus === "paid" || paymentStatus === "successful") {
     return "paid";
   }
 
@@ -60,11 +40,10 @@ async function verifyByReference(reference: string) {
     throw new Error("Payment not found.");
   }
  
-  const verified = await verifyTransaction(reference);
-  const paymentStatus = mapPaystackToPaymentStatus(verified.status);
-  const orderStatus = mapPaymentToOrderStatus(paymentStatus);
+  const verified = await PaymentGateway.paystack().verify(reference);
+  const orderStatus = mapPaymentToOrderStatus(verified.status);
  
-  payment.status = paymentStatus;
+  payment.status = verified.status;
   payment.rawResponse = verified.rawResponse;
   payment.amount = verified.amount;
   payment.currency = verified.currency.toUpperCase();
@@ -80,13 +59,13 @@ async function verifyByReference(reference: string) {
     paymentId: payment._id.toString(),
     orderId: order?._id.toString() ?? null,
     reference,
-    paymentStatus,
+    paymentStatus: verified.status,
     orderStatus,
   });
  
   return {
     reference,
-    paymentStatus,
+    paymentStatus: verified.status,
     orderStatus,
     payment,
     order,

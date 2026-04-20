@@ -1,14 +1,13 @@
-"use client";
-
 import { Loader2 } from "lucide-react";
-
 import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 type CheckoutButtonProps = {
   onClick: () => void;
   disabled?: boolean;
   isLoading?: boolean;
   label?: string;
+  className?: string;
 };
 
 export function CheckoutButton({
@@ -16,13 +15,14 @@ export function CheckoutButton({
   disabled = false,
   isLoading = false,
   label = "Checkout",
+  className,
 }: CheckoutButtonProps) {
   return (
     <Button
       type="button"
       onClick={onClick}
       disabled={disabled || isLoading}
-      className="w-full"
+      className={cn("w-full", className)}
       size="lg"
     >
       {isLoading ? (

@@ -2,7 +2,7 @@ import mongoose from "mongoose";
 import { Order } from "@/models/Order";
 import { Payment } from "@/models/Payment";
 import { connectToDatabase } from "@/lib/mongoose";
-import { verifyPayment } from "@/lib/pesapal";
+import { PaymentGateway } from "@/lib/payments/gateway";
 
 export class PesapalSyncError extends Error {
   status: number;
@@ -14,46 +14,10 @@ export class PesapalSyncError extends Error {
   }
 }
 
-function mapPesapalToPaymentStatus(
-  statusCode?: string,
-  statusDescription?: string,
-): "successful" | "failed" | "pending" | "cancelled" {
-  const normalizedCode = statusCode?.toLowerCase();
-  const normalizedDescription = statusDescription?.toLowerCase();
-
-  if (
-    normalizedCode === "1" ||
-    normalizedCode === "completed" ||
-    normalizedDescription?.includes("completed") ||
-    normalizedDescription?.includes("success")
-  ) {
-    return "successful";
-  }
-
-  if (
-    normalizedCode === "cancelled" ||
-    normalizedCode === "3" ||
-    normalizedDescription?.includes("cancel")
-  ) {
-    return "cancelled";
-  }
-
-  if (
-    normalizedCode === "2" ||
-    normalizedCode === "failed" ||
-    normalizedDescription?.includes("fail") ||
-    normalizedDescription?.includes("invalid")
-  ) {
-    return "failed";
-  }
-
-  return "pending";
-}
-
 function mapPaymentToOrderStatus(
-  paymentStatus: "successful" | "failed" | "pending" | "cancelled",
+  paymentStatus: string,
 ): "paid" | "failed" | "pending" | "cancelled" {
-  if (paymentStatus === "successful") {
+  if (paymentStatus === "paid" || paymentStatus === "successful") {
     return "paid";
   }
 
@@ -74,8 +38,8 @@ export async function syncPesapalPaymentStatus(
 ) {
   await connectToDatabase();
 
-  const verified = await verifyPayment(trackingId);
-  const reference = verified.merchantReference ?? merchantReference;
+  const verified = await PaymentGateway.pesapal().verify(trackingId);
+  const reference = verified.reference || merchantReference;
 
   if (!reference) {
     throw new PesapalSyncError(
@@ -97,13 +61,9 @@ export async function syncPesapalPaymentStatus(
         throw new PesapalSyncError("Payment not found.", 404);
       }
 
-      const paymentStatus = mapPesapalToPaymentStatus(
-        verified.statusCode,
-        verified.statusDescription,
-      );
-      const orderStatus = mapPaymentToOrderStatus(paymentStatus);
+      const orderStatus = mapPaymentToOrderStatus(verified.status);
 
-      payment.status = paymentStatus;
+      payment.status = verified.status as any;
       payment.rawResponse = verified.rawResponse;
 
       if (typeof verified.amount === "number") {
@@ -127,15 +87,14 @@ export async function syncPesapalPaymentStatus(
         orderId: order?._id.toString() ?? null,
         reference,
         trackingId,
-        paymentStatus,
+        paymentStatus: verified.status,
         orderStatus,
-        pesapalStatus: verified.statusDescription,
       });
 
       return {
         reference,
         trackingId,
-        paymentStatus,
+        paymentStatus: verified.status,
         orderStatus,
         payment,
         order,

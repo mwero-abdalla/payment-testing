@@ -1,6 +1,6 @@
 import { AppConfig } from "@/models/AppConfig";
 import { connectToDatabase } from "@/lib/mongoose";
-import { type PesapalIpnEntry, resolveOrRegisterIpn } from "@/lib/pesapal";
+import { PaymentGateway } from "@/lib/payments/gateway";
 
 const PESAPAL_IPN_CONFIG_KEY = "pesapal.ipn.current";
 
@@ -39,7 +39,7 @@ async function getStoredIpnConfig(): Promise<StoredPesapalIpnConfig | null> {
 }
 
 export async function saveIpnConfig(
-  entry: PesapalIpnEntry,
+  entry: { ipnId: string; status?: string },
   webhookUrl: string,
 ) {
   await connectToDatabase();
@@ -65,8 +65,8 @@ export async function syncPesapalIpn(webhookUrl: string) {
     throw new Error("PESAPAL_WEBHOOK_URL must be set to sync Pesapal IPN.");
   }
 
-  const resolved = await resolveOrRegisterIpn(webhookUrl);
-  const stored = await saveIpnConfig(resolved, webhookUrl);
+  const resolved = await PaymentGateway.pesapal().resolveOrRegisterIpn(webhookUrl);
+  const stored = await saveIpnConfig(resolved as any, webhookUrl);
 
   return {
     provider: resolved,
